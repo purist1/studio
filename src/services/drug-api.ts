@@ -13,9 +13,21 @@ interface OpenFDAResult {
 
 export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
     try {
+        const apiKey = process.env.OPENFDA_API_KEY;
+        const searchParams = new URLSearchParams({
+            search: `product_ndc:"${barcode}"`,
+            limit: '1',
+        });
+
+        if (apiKey) {
+            searchParams.append('api_key', apiKey);
+        }
+
+        const url = `https://api.fda.gov/drug/ndc.json?${searchParams.toString()}`;
+
         // We will assume the barcode is the product NDC for now.
         // In a real-world scenario, we'd need to parse various barcode formats (like GS1) to extract the NDC.
-        const response = await fetch(`https://api.fda.gov/drug/ndc.json?search=product_ndc:"${barcode}"&limit=1`);
+        const response = await fetch(url);
 
         if (!response.ok) {
             console.error(`OpenFDA API request failed with status ${response.status}`);
