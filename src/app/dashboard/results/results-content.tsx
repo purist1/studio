@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { flagSuspectDrug, type FlagSuspectDrugOutput } from '@/ai/flows/flag-suspect-drugs';
-import { getMockDrugDetails } from '@/lib/data';
+import { flagSuspectDrug, type FlagSuspectDrugInput, type FlagSuspectDrugOutput } from '@/ai/flows/flag-suspect-drugs';
+import { getDrugDetailsFromAPI } from '@/services/drug-api';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, CheckCircle2, FlaskConical, Calendar, Hash, ScanLine, AlertCircle, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FlaskConical, Calendar, Hash, ScanLine, AlertCircle, Info, Database } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 type VerificationResult = FlagSuspectDrugOutput & {
-    drugDetails: ReturnType<typeof getMockDrugDetails>
+    drugDetails: Partial<FlagSuspectDrugInput>
 };
 
 export function ResultsContent() {
@@ -36,15 +36,31 @@ export function ResultsContent() {
     const verifyDrug = async () => {
       setIsLoading(true);
       try {
-        const drugDetails = getMockDrugDetails(barcode);
-        const aiResult = await flagSuspectDrug(drugDetails);
-        setResult({ ...aiResult, drugDetails });
+        const drugDetails = await getDrugDetailsFromAPI(barcode);
+        
+        const aiInput: FlagSuspectDrugInput = {
+            manufacturer: drugDetails.manufacturer || 'Unknown',
+            productionDate: drugDetails.productionDate || 'Unknown',
+            batchNumber: drugDetails.batchNumber || 'Unknown',
+            openFDADetails: drugDetails.openFDADetails,
+            gs1Details: drugDetails.gs1Details,
+            internalDatasetDetails: drugDetails.internalDatasetDetails,
+        };
+        
+        const aiResult = await flagSuspectDrug(aiInput);
+        setResult({ ...aiResult, drugDetails: aiInput });
+
       } catch (error) {
         console.error('Verification failed:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
           description: 'Could not perform drug verification.',
+        });
+         setResult({
+            isSuspect: true,
+            reason: "An unexpected error occurred during verification. Please check the console for details.",
+            drugDetails: { manufacturer: 'N/A', productionDate: 'N/A', batchNumber: 'N/A' }
         });
       } finally {
         setIsLoading(false);
@@ -63,10 +79,10 @@ export function ResultsContent() {
 
   if (isLoading || !result) {
     return (
-        <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center">
+        <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
             <div className="text-center text-muted-foreground">
                 <ScanLine className="h-12 w-12 mx-auto animate-pulse mb-4" />
-                <p className="font-semibold">Verifying Drug...</p>
+                <p className="font-semibold">Verifying Drug against Real-World Databases...</p>
                 <p className="text-sm">Please wait while we check the details.</p>
             </div>
         </div>
@@ -120,20 +136,23 @@ export function ResultsContent() {
                 <div className="flex items-center gap-3"><Hash className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">Batch Number:</span> {drugDetails.batchNumber}</div>
               </div>
             </div>
+            
+            <Separator />
 
             <div className="space-y-4">
-                <Card>
+                <h3 className="text-xl font-semibold flex items-center gap-2"><Database className="h-5 w-5 text-accent"/>Data Sources</h3>
+                {drugDetails.openFDADetails && <Card>
                     <CardHeader><CardTitle className="text-base">OpenFDA Details</CardTitle></CardHeader>
                     <CardContent className="text-sm text-muted-foreground">{drugDetails.openFDADetails}</CardContent>
-                </Card>
-                <Card>
+                </Card>}
+                {drugDetails.gs1Details && <Card>
                     <CardHeader><CardTitle className="text-base">GS1 Details</CardTitle></CardHeader>
                     <CardContent className="text-sm text-muted-foreground">{drugDetails.gs1Details}</CardContent>
-                </Card>
-                 <Card>
+                </Card>}
+                 {drugDetails.internalDatasetDetails && <Card>
                     <CardHeader><CardTitle className="text-base">Internal Dataset Details</CardTitle></CardHeader>
                     <CardContent className="text-sm text-muted-foreground">{drugDetails.internalDatasetDetails}</CardContent>
-                </Card>
+                </Card>}
             </div>
 
         </CardContent>
