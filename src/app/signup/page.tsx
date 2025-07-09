@@ -13,14 +13,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
+import { useToast } from '@/hooks/use-toast';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
-  const handleLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSignup = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Mock login logic
-    router.push('/dashboard');
+    // Mock signup logic
+    toast({
+      title: 'Account Created',
+      description: 'You can now log in with your credentials.',
+    });
+    router.push('/');
   };
 
   return (
@@ -32,42 +38,35 @@ export default function LoginPage() {
           </div>
           <div className="text-center">
             <CardTitle className="text-2xl font-bold text-center">
-              CUSTECH DrugVerify
+              Create an Account
             </CardTitle>
             <CardDescription>
-              Login to your clinic account
+              Enter your information to get started
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullname">Full Name</Label>
+              <Input id="fullname" placeholder="John Doe" required />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="staff@custech.edu.ng"
-                required
-                defaultValue="staff@custech.edu.ng"
-              />
+              <Input id="email" type="email" placeholder="staff@custech.edu.ng" required />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
-                </Link>
-              </div>
-              <Input id="password" type="password" required defaultValue="password" />
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" required />
             </div>
             <Button type="submit" className="w-full">
-              Login
+              Create Account
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
-              Sign up
+            Already have an account?{' '}
+            <Link href="/" className="underline">
+              Login
             </Link>
           </div>
         </CardContent>
