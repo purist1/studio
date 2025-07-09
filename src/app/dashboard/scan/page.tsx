@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Camera, Type, VideoOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export default function ScanPage() {
   const router = useRouter();
@@ -143,38 +144,45 @@ export default function ScanPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="aspect-video bg-muted rounded-lg flex flex-col items-center justify-center p-1 text-center border-2 border-dashed relative overflow-hidden">
+            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center text-center border-2 border-dashed relative overflow-hidden">
+                <video
+                    ref={videoRef}
+                    className={cn(
+                        'w-full h-full object-cover',
+                        !hasCameraPermission && 'hidden'
+                    )}
+                    autoPlay
+                    playsInline
+                    muted
+                />
+
+                {isScanning && hasCameraPermission && <ScannerOverlay />}
+
                 {hasCameraPermission === undefined && (
-                    <>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
                         <Camera className="h-16 w-16 text-muted-foreground mb-4" />
                         <h3 className="font-semibold text-lg">Requesting Camera Access</h3>
                         <p className="text-muted-foreground text-sm">Please wait...</p>
-                    </>
+                    </div>
                 )}
 
                 {hasCameraPermission === false && (
-                    <div className="p-4">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted p-4">
                         <Alert variant="destructive">
                             <VideoOff className="h-4 w-4"/>
                             <AlertTitle>Camera Access Denied</AlertTitle>
                             <AlertDescription>
-                                Please allow camera access in your browser settings. You can still enter barcodes manually.
+                                Please allow camera access. You can still enter barcodes manually below.
                             </AlertDescription>
                         </Alert>
                     </div>
                 )}
                 
-                {hasCameraPermission === true && (
-                   <>
-                     <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                     {isScanning && <ScannerOverlay />}
-                     {!isScanning && detectedBarcode && (
-                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
-                            <p className="font-semibold">Scan complete!</p>
-                            <p className="text-sm">Redirecting to results...</p>
-                        </div>
-                     )}
-                   </>
+                {detectedBarcode && (
+                    <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
+                        <p className="font-semibold">Scan complete!</p>
+                        <p className="text-sm">Redirecting to results...</p>
+                    </div>
                 )}
             </div>
           </CardContent>
