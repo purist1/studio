@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ import { AlertTriangle, CheckCircle2, FlaskConical, Calendar, Hash, ScanLine, Al
 import { Separator } from '@/components/ui/separator';
 
 type VerificationResult = FlagSuspectDrugOutput & {
-    drugDetails: Partial<FlagSuspectDrugInput>
+    drugDetails: Partial<FlagSuspectDrugInput> & { dailymedDetails?: string }
 };
 
 export function ResultsContent() {
@@ -48,7 +49,7 @@ export function ResultsContent() {
         };
         
         const aiResult = await flagSuspectDrug(aiInput);
-        setResult({ ...aiResult, drugDetails: aiInput });
+        setResult({ ...aiResult, drugDetails });
 
       } catch (error) {
         console.error('Verification failed:', error);
@@ -145,6 +146,10 @@ export function ResultsContent() {
                 {drugDetails.openFDADetails && <Card>
                     <CardHeader><CardTitle className="text-base">OpenFDA Details</CardTitle></CardHeader>
                     <CardContent className="text-sm text-muted-foreground">{drugDetails.openFDADetails}</CardContent>
+                </Card>}
+                {drugDetails.dailymedDetails && <Card>
+                    <CardHeader><CardTitle className="text-base">DailyMed (NLM) Details</CardTitle></CardHeader>
+                    <CardContent className="text-sm text-muted-foreground">{drugDetails.dailymedDetails}</CardContent>
                 </Card>}
                 {drugDetails.gs1Details && <Card>
                     <CardHeader><CardTitle className="text-base">GS1 Details</CardTitle></CardHeader>

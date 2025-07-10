@@ -61,6 +61,41 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
     }
 }
 
+async function searchDailyMed(barcode: string): Promise<{ dailymedDetails?: string }> {
+    try {
+        const url = `https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?ndc=${barcode}&limit=1`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            console.error(`DailyMed API request failed with status ${response.status}`);
+            return {
+                dailymedDetails: `Failed to fetch data from DailyMed. Status: ${response.status}`
+            };
+        }
+        
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+            const drug = result.data[0];
+            const drugName = drug.spl_product_data_elements?.[0]?.brand_name || 'Unknown Name';
+            const manufacturer = drug.author || 'Unknown Manufacturer';
+             return {
+                dailymedDetails: `Successfully found drug in DailyMed database. Name: ${drugName}, Author/Manufacturer: ${manufacturer}.`
+            };
+        } else {
+            return {
+                dailymedDetails: `No drug found for barcode "${barcode}" in the DailyMed (NLM) database.`
+            };
+        }
+    } catch (error) {
+        console.error('Error fetching from DailyMed:', error);
+        return {
+            dailymedDetails: 'An error occurred while connecting to the DailyMed service.'
+        };
+    }
+}
+
+
 function formatDate(dateString: string): string {
     if (dateString.length !== 8) return dateString;
     const year = dateString.substring(0, 4);
@@ -69,7 +104,7 @@ function formatDate(dateString: string): string {
     return `${year}-${month}-${day}`;
 }
 
-export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
+export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput> & { dailymedDetails?: string }> {
     const cleanedBarcode = barcode.replace(/-/g, '');
     
     const internalRecord = ndcDataset.find(
@@ -79,7 +114,7 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     );
 
     let details: Partial<FlagSuspectDrugInput> = {
-        gs1Details: 'External data source (e.g., GS1, Orca Scan) not connected. This feature requires API credentials from an external provider.',
+        gs1Details: 'External data source (e.g., GS1, Orca Scan) not connected. This feature requires API credentials from a provider like orcascan.com.',
     };
 
     if (internalRecord) {
@@ -102,8 +137,9 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     }
 
     const openFDADetails = await searchOpenFDA(barcode);
+    const dailyMedDetails = await searchDailyMed(barcode);
     
-    details = { ...details, ...openFDADetails };
+    details = { ...details, ...openFDADetails, ...dailyMedDetails };
     
     if (!details.manufacturer) {
         details.manufacturer = 'N/A';
