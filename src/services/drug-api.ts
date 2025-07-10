@@ -61,17 +61,21 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
     }
 }
 
+function formatDate(dateString: string): string {
+    if (dateString.length !== 8) return dateString;
+    const year = dateString.substring(0, 4);
+    const month = dateString.substring(4, 6);
+    const day = dateString.substring(6, 8);
+    return `${year}-${month}-${day}`;
+}
+
 export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
-    // A real-world app would parse different barcode formats (like GS1) to extract the NDC.
-    // For now, we will assume the scanned barcode IS the NDC.
+    const cleanedBarcode = barcode.replace(/-/g, '');
     
-    // Step 1: Search our internal dataset first.
-    // The NDC standard can be complex (e.g., 10 or 11 digits, different segments).
-    // We'll perform a flexible search on ItemCode and NDC11.
     const internalRecord = ndcDataset.find(
       (record) => 
-        record.ItemCode.replace(/-/g, '') === barcode.replace(/-/g, '') || 
-        barcode.replace(/-/g, '').includes(record.NDC11)
+        record.ItemCode.replace(/-/g, '') === cleanedBarcode || 
+        cleanedBarcode.includes(record.NDC11)
     );
 
     let details: Partial<FlagSuspectDrugInput> = {
@@ -79,22 +83,28 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     };
 
     if (internalRecord) {
-        details.manufacturer = internalRecord.ProprietaryName; // Using Proprietary Name as a stand-in for manufacturer
-        details.productionDate = internalRecord.MarketingStartDate;
+        details.manufacturer = internalRecord.ProprietaryName; 
+        
+        let productionDateInfo = formatDate(internalRecord.MarketingStartDate);
+        let internalDetailsMessage = `Match found in internal dataset: ${internalRecord.ProprietaryName}, App No: ${internalRecord.ApplicationNumber}. Marketed since: ${productionDateInfo}.`;
+        
+        if (internalRecord.MarketingEndDate) {
+            const endDate = formatDate(internalRecord.MarketingEndDate);
+            productionDateInfo += ` to ${endDate}`;
+            internalDetailsMessage += ` Discontinued on: ${endDate}. This product should no longer be in circulation.`
+        }
+
+        details.productionDate = productionDateInfo;
         details.batchNumber = 'N/A (Not in this dataset)';
-        details.internalDatasetDetails = `Match found in internal dataset: ${internalRecord.ProprietaryName}, App No: ${internalRecord.ApplicationNumber}`;
+        details.internalDatasetDetails = internalDetailsMessage;
     } else {
         details.internalDatasetDetails = `No match found for barcode "${barcode}" in the internal CUSTECH dataset.`;
     }
 
-    // Step 2: Search OpenFDA to supplement our data.
     const openFDADetails = await searchOpenFDA(barcode);
     
-    // Step 3: Combine the results.
-    // Prioritize OpenFDA manufacturer if available, as it's more explicit.
     details = { ...details, ...openFDADetails };
     
-    // If no manufacturer info from either source, set to N/A.
     if (!details.manufacturer) {
         details.manufacturer = 'N/A';
     }

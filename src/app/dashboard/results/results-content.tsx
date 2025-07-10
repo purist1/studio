@@ -98,6 +98,7 @@ export function ResultsContent() {
   );
   const statusColor = isSuspect ? 'destructive' : 'default';
   const statusBg = isSuspect ? 'bg-red-100 dark:bg-red-900/10' : 'bg-green-100 dark:bg-green-900/10';
+  const dateLabel = (drugDetails.productionDate || '').includes(' to ') ? "Marketing Dates:" : "Production Date:";
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
@@ -132,7 +133,7 @@ export function ResultsContent() {
               <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><Info className="h-5 w-5 text-accent"/>Drug Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <div className="flex items-center gap-3"><FlaskConical className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">Manufacturer:</span> {drugDetails.manufacturer}</div>
-                <div className="flex items-center gap-3"><Calendar className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">Production Date:</span> {drugDetails.productionDate}</div>
+                <div className="flex items-center gap-3"><Calendar className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">{dateLabel}</span> {drugDetails.productionDate}</div>
                 <div className="flex items-center gap-3"><Hash className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">Batch Number:</span> {drugDetails.batchNumber}</div>
               </div>
             </div>
