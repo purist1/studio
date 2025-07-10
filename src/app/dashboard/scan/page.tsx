@@ -95,7 +95,7 @@ export default function ScanPage() {
           console.error(e);
         }
       }
-    }, 200);
+    }, 100);
 
     return () => clearInterval(intervalId);
   }, [isScanning, toast, detectedBarcode]);
