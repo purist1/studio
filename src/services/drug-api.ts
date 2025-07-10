@@ -79,7 +79,7 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     );
 
     let details: Partial<FlagSuspectDrugInput> = {
-        gs1Details: 'GS1 Source not connected.',
+        gs1Details: 'GS1 Source not connected. This feature requires API credentials from a GS1 provider.',
     };
 
     if (internalRecord) {
