@@ -97,7 +97,7 @@ export default function ScanPage() {
       } finally {
         setIsProcessing(false); // Ready for next frame
       }
-    }, 500),
+    }, 100),
     [detectedBarcode]
   );
   
