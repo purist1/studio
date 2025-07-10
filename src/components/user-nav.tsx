@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CircleUser, Home, LogOut, ScanLine, History } from 'lucide-react';
+import { CircleUser, Home, LogOut, Search, MessageSquare, History } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -53,8 +53,14 @@ export function UserNav() {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard/scan">
-            <ScanLine className="mr-2 h-4 w-4" />
-            <span>Scan Drug</span>
+            <Search className="mr-2 h-4 w-4" />
+            <span>Verify Drug</span>
+          </Link>
+        </DropdownMenuItem>
+         <DropdownMenuItem asChild>
+          <Link href="/dashboard/chat">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span>Chat with AI</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
