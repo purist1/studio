@@ -1,6 +1,8 @@
+
 'use server';
 
 import type { FlagSuspectDrugInput } from '@/ai/flows/flag-suspect-drugs';
+import { ndcDataset } from '@/lib/ndc-data';
 
 interface OpenFDAResult {
     product_ndc: string;
@@ -11,8 +13,8 @@ interface OpenFDAResult {
     };
 }
 
-export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
-    try {
+async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
+     try {
         const apiKey = process.env.OPENFDA_API_KEY;
         const searchParams = new URLSearchParams({
             search: `product_ndc:"${barcode}"`,
@@ -25,16 +27,11 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
 
         const url = `https://api.fda.gov/drug/ndc.json?${searchParams.toString()}`;
 
-        // We will assume the barcode is the product NDC for now.
-        // In a real-world scenario, we'd need to parse various barcode formats (like GS1) to extract the NDC.
         const response = await fetch(url);
 
         if (!response.ok) {
             console.error(`OpenFDA API request failed with status ${response.status}`);
             return {
-                manufacturer: 'N/A',
-                productionDate: 'N/A',
-                batchNumber: 'N/A',
                 openFDADetails: `Failed to fetch data from OpenFDA. Status: ${response.status}`,
             };
         }
@@ -48,32 +45,63 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
 
             return {
                 manufacturer: manufacturer,
-                productionDate: 'N/A (Not provided by API)',
-                batchNumber: 'N/A (Not provided by API)',
                 openFDADetails: `Successfully found drug in OpenFDA database. Name: ${drugName}, Manufacturer: ${manufacturer}.`,
-                gs1Details: 'GS1 Source not connected.',
-                internalDatasetDetails: 'Internal Dataset not connected.',
             };
         } else {
             return {
-                manufacturer: 'N/A',
-                productionDate: 'N/A',
-                batchNumber: 'N/A',
                 openFDADetails: `No drug found for barcode "${barcode}" in the OpenFDA database. This could be a non-US drug, a non-prescription item, or a counterfeit product.`,
-                gs1Details: 'GS1 Source not connected.',
-                internalDatasetDetails: 'Internal Dataset not connected.',
             };
         }
 
     } catch (error) {
         console.error('Error fetching from OpenFDA:', error);
         return {
-            manufacturer: 'N/A',
-            productionDate: 'N/A',
-            batchNumber: 'N/A',
             openFDADetails: 'An error occurred while connecting to the OpenFDA service.',
-            gs1Details: 'GS1 Source not connected.',
-            internalDatasetDetails: 'Internal Dataset not connected.',
         };
     }
+}
+
+export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
+    // A real-world app would parse different barcode formats (like GS1) to extract the NDC.
+    // For now, we will assume the scanned barcode IS the NDC.
+    
+    // Step 1: Search our internal dataset first.
+    // The NDC standard can be complex (e.g., 10 or 11 digits, different segments).
+    // We'll perform a flexible search on ItemCode and NDC11.
+    const internalRecord = ndcDataset.find(
+      (record) => record.ItemCode.replace(/-/g, '') === barcode.replace(/-/g, '') || record.NDC11 === barcode
+    );
+
+    let details: Partial<FlagSuspectDrugInput> = {
+        gs1Details: 'GS1 Source not connected.',
+    };
+
+    if (internalRecord) {
+        details.manufacturer = internalRecord.ProprietaryName; // Using Proprietary Name as a stand-in for manufacturer
+        details.productionDate = internalRecord.MarketingStartDate;
+        details.batchNumber = 'N/A (Not in this dataset)';
+        details.internalDatasetDetails = `Match found in internal dataset: ${internalRecord.ProprietaryName}, App No: ${internalRecord.ApplicationNumber}`;
+    } else {
+        details.internalDatasetDetails = `No match found for barcode "${barcode}" in the internal CUSTECH dataset.`;
+    }
+
+    // Step 2: Search OpenFDA to supplement our data.
+    const openFDADetails = await searchOpenFDA(barcode);
+    
+    // Step 3: Combine the results.
+    // Prioritize OpenFDA manufacturer if available, as it's more explicit.
+    details = { ...details, ...openFDADetails };
+    
+    // If no manufacturer info from either source, set to N/A.
+    if (!details.manufacturer) {
+        details.manufacturer = 'N/A';
+    }
+    if (!details.productionDate) {
+        details.productionDate = 'N/A';
+    }
+    if (!details.batchNumber) {
+        details.batchNumber = 'N/A';
+    }
+
+    return details;
 }
