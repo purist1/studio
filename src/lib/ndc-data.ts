@@ -1,4 +1,5 @@
 
+
 export interface NDCRecord {
     ItemCode: string;
     NDC11: string;
@@ -59,4 +60,30 @@ export const ndcDataset: NDCRecord[] = [
     { ItemCode: '0074-4317-72', NDC11: '74431772', ProprietaryName: 'Zemplar', DosageForm: 'CAPSULE, LIQUID FILLED', MarketingCategory: 'NDA', ApplicationNumber: 'NDA021606', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20100614', MarketingEndDate: '20140903' },
     { ItemCode: '0074-4552-11', NDC11: '74455211', ProprietaryName: 'Synthroid', DosageForm: 'TABLET', MarketingCategory: 'NDA', ApplicationNumber: 'NDA021402', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20020724' },
     { ItemCode: '0078-0181-01', NDC11: '78018101', ProprietaryName: 'Sandostatin', DosageForm: 'INJECTION, SOLUTION', MarketingCategory: 'NDA', ApplicationNumber: 'NDA019667', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '19881021' },
+    { ItemCode: '0093-4161-76', NDC11: '93416176', ProprietaryName: 'Amoxicillin', DosageForm: 'POWDER, FOR SUSPENSION', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA065119', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20030701' },
+    { ItemCode: '0093-5002-56', NDC11: '93500256', ProprietaryName: 'Olmesartan Medoxomil, Amlo', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA202491', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20161114' },
+    { ItemCode: '0093-5268-56', NDC11: '93526856', ProprietaryName: 'Zaleplon', DosageForm: 'CAPSULE', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA077239', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20080606', MarketingEndDate: '20101112' },
+    { ItemCode: '0093-7248-05', NDC11: '93724805', ProprietaryName: 'Lamotrigine', DosageForm: 'TABLET', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA076388', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20091222', MarketingEndDate: '20181031' },
+    { ItemCode: '0093-7455-01', NDC11: '93745501', ProprietaryName: 'Glipizide and Metformin Hydro', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA077270', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20051028' },
+    { ItemCode: '0093-8547-52', NDC11: '93854752', ProprietaryName: 'Ranitidine', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA074488', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20110407', MarketingEndDate: '20110407' },
+    { ItemCode: '0093-9163-01', NDC11: '93916301', ProprietaryName: 'Venlafaxine Hydrochloride', DosageForm: 'TABLET', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA076690', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20060804' },
+    { ItemCode: '0113-0087-53', NDC11: '113008753', ProprietaryName: 'good sense anti diarrheal anti', DosageForm: 'TABLET', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA209837', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20181011' },
+    { ItemCode: '0113-0604-71', NDC11: '113060471', ProprietaryName: 'good sense ibuprofen', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA072096', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '19890915' },
+    { ItemCode: '0113-0612-65', NDC11: '113061265', ProprietaryName: 'good sense allergy relief', DosageForm: 'TABLET', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA076301', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20041006' },
+    { ItemCode: '0113-0812-03', NDC11: '113081203', ProprietaryName: 'good sense mucus dm', DosageForm: 'TABLET, EXTENDED RELEASE', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA207602', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20210909' },
+    { ItemCode: '0113-1720-06', NDC11: '113172006', ProprietaryName: 'Nasonex', DosageForm: 'SPRAY, METERED', MarketingCategory: 'NDA', ApplicationNumber: 'NDA215712', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20220629' },
+    { ItemCode: '0113-4368-62', NDC11: '113436862', ProprietaryName: 'Good Sense Naproxen Sodium', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA074661', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20140331' },
+    { ItemCode: '0113-7033-78', NDC11: '113703378', ProprietaryName: 'basic care naproxen sodium', DosageForm: 'TABLET, FILM COATED', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA074661', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20190123', MarketingEndDate: '20220831' },
+    { ItemCode: '0115-0657-10', NDC11: '115065710', ProprietaryName: 'Buspirone HCl', DosageForm: 'TABLET', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA074253', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20010328', MarketingEndDate: '20161110' },
+    { ItemCode: '0116-0401-50', NDC11: '116040150', ProprietaryName: 'Antiseptic Skin Cleanser', DosageForm: 'LIQUID', MarketingCategory: 'NDA', ApplicationNumber: 'NDA019125', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20131101' },
+    { ItemCode: '0116-1061-15', NDC11: '116106115', ProprietaryName: 'ANTISEPTIC SKIN CLEANSER', DosageForm: 'SOLUTION', MarketingCategory: 'NDA', ApplicationNumber: 'NDA019125', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20180801' },
+    { ItemCode: '0132-0333-44', NDC11: '132033344', ProprietaryName: 'Boudreauxs', DosageForm: 'CREAM', MarketingCategory: 'OTC Monograph Drug', ApplicationNumber: 'M016', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20120201' },
+    { ItemCode: '0135-0139-01', NDC11: '135013901', ProprietaryName: 'PANADOL', DosageForm: 'LIQUID', MarketingCategory: 'OTC monograph not fir part343', ApplicationNumber: 'part343', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20110223', MarketingEndDate: '20130701' },
+    { ItemCode: '0135-0508-01', NDC11: '135050801', ProprietaryName: 'NICORETTE', DosageForm: 'LOZENGE', MarketingCategory: 'NDA', ApplicationNumber: 'NDA022360', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20100301', MarketingEndDate: '20141118' },
+    { ItemCode: '0135-0510-02', NDC11: '135051002', ProprietaryName: 'NICORETTE', DosageForm: 'LOZENGE', MarketingCategory: 'NDA', ApplicationNumber: 'NDA021330', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20101019', MarketingEndDate: '20141231' },
+    { ItemCode: '0135-0576-04', NDC11: '135057604', ProprietaryName: 'FLONASE ALLERGY RELIEF', DosageForm: 'SPRAY, METERED', MarketingCategory: 'NDA', ApplicationNumber: 'NDA205434', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20150107' },
+    { ItemCode: '0135-0615-05', NDC11: '135061505', ProprietaryName: 'FLONASE SENSIMIST ALLERGY I', DosageForm: 'SPRAY, METERED', MarketingCategory: 'NDA', ApplicationNumber: 'NDA022051', ProductType: 'HUMAN OTC DRUG', MarketingStartDate: '20170701' },
+    { ItemCode: '0143-2260-30', NDC11: '143226030', ProprietaryName: 'Isosorbide', DosageForm: 'TABLET, FILM COATED, EXTENDED RELEASE', MarketingCategory: 'ANDA', ApplicationNumber: 'ANDA076813', ProductType: 'HUMAN PRESCRIPTION', MarketingStartDate: '20060330', MarketingEndDate: '20120410' },
 ];
+
+    
