@@ -69,7 +69,9 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     // The NDC standard can be complex (e.g., 10 or 11 digits, different segments).
     // We'll perform a flexible search on ItemCode and NDC11.
     const internalRecord = ndcDataset.find(
-      (record) => record.ItemCode.replace(/-/g, '') === barcode.replace(/-/g, '') || record.NDC11 === barcode
+      (record) => 
+        record.ItemCode.replace(/-/g, '') === barcode.replace(/-/g, '') || 
+        barcode.replace(/-/g, '').includes(record.NDC11)
     );
 
     let details: Partial<FlagSuspectDrugInput> = {
