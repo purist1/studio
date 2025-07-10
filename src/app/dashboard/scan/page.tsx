@@ -1,36 +1,61 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Camera, Type, VideoOff } from 'lucide-react';
+import { Camera, Type, VideoOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { detectBarcode } from '@/ai/flows/detect-barcode-from-image';
+
+// Debounce function to limit how often we call the expensive AI
+function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<F>): Promise<ReturnType<F>> =>
+    new Promise(resolve => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      timeout = setTimeout(() => resolve(func(...args)), waitFor);
+    });
+}
+
 
 export default function ScanPage() {
   const router = useRouter();
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>(undefined);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [detectedBarcode, setDetectedBarcode] = useState('');
+
+  // Stop all streams and intervals
+  const cleanup = useCallback(() => {
+    if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
 
   // Request camera permission and start the stream
   useEffect(() => {
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Not Supported',
-          description: 'Your browser does not support camera access.',
-        });
         return;
       }
 
@@ -39,10 +64,6 @@ export default function ScanPage() {
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            setIsScanning(true);
-          }
         }
         setHasCameraPermission(true);
       } catch (error) {
@@ -58,58 +79,69 @@ export default function ScanPage() {
 
     getCameraPermission();
 
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+    return cleanup;
+  }, [toast, cleanup]);
+
+  // Debounced barcode detection function
+  const debouncedDetectBarcode = useCallback(
+    debounce(async (imageDataUri: string) => {
+      if (detectedBarcode) return; // Already found one
+      try {
+        const result = await detectBarcode({ imageDataUri });
+        if (result.barcode) {
+          setDetectedBarcode(result.barcode);
+        }
+      } catch (error) {
+        console.error("Error detecting barcode:", error);
+        // Optionally show a toast for backend errors
+      } finally {
+        setIsProcessing(false); // Ready for next frame
       }
-    };
-  }, [toast]);
-
-  // Barcode detection effect
+    }, 500), // Adjust debounce time as needed
+    [detectedBarcode]
+  );
+  
+  // Barcode detection interval
   useEffect(() => {
-    if (!isScanning || detectedBarcode) return;
-
-    if (!('BarcodeDetector' in window)) {
-        console.log('Barcode Detector is not supported by this browser.');
-        toast({
-            variant: 'destructive',
-            title: 'Browser Not Supported',
-            description: 'Barcode detection is not supported on this browser. Please enter the code manually.',
-        });
-        setIsScanning(false);
+    if (!isCameraReady || detectedBarcode) {
+        if(scanIntervalRef.current) clearInterval(scanIntervalRef.current);
         return;
     }
 
-    const barcodeDetector = new (window as any).BarcodeDetector({
-        formats: ['ean_13', 'qr_code', 'code_128', 'code_39', 'upc_a', 'upc_e', 'itf'],
-    });
+    scanIntervalRef.current = setInterval(() => {
+        if (isProcessing || !videoRef.current || !canvasRef.current) return;
+        
+        setIsProcessing(true);
 
-    const intervalId = setInterval(async () => {
-      if (videoRef.current && videoRef.current.readyState >= 3) {
-        try {
-          const barcodes = await barcodeDetector.detect(videoRef.current);
-          if (barcodes.length > 0 && !detectedBarcode) {
-            setDetectedBarcode(barcodes[0].rawValue);
-          }
-        } catch (e) {
-          console.error(e);
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const context = canvas.getContext('2d');
+        if (context) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataUri = canvas.toDataURL('image/jpeg');
+            debouncedDetectBarcode(imageDataUri);
+        } else {
+             setIsProcessing(false);
         }
-      }
-    }, 100);
 
-    return () => clearInterval(intervalId);
-  }, [isScanning, toast, detectedBarcode]);
+    }, 200); // How often to capture a frame
+
+    return () => {
+        if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+    }
+
+  }, [isCameraReady, isProcessing, detectedBarcode, debouncedDetectBarcode]);
   
   // Navigate when barcode is detected
   useEffect(() => {
     if (detectedBarcode) {
-      setIsScanning(false);
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      router.push(`/dashboard/results?barcode=${detectedBarcode}`);
+        cleanup();
+        router.push(`/dashboard/results?barcode=${detectedBarcode}`);
     }
-  }, [detectedBarcode, router]);
+  }, [detectedBarcode, router, cleanup]);
 
 
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -128,7 +160,7 @@ export default function ScanPage() {
             <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary rounded-tr-lg"></div>
             <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary rounded-bl-lg"></div>
             <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary rounded-br-lg"></div>
-            <div className="absolute top-1/2 left-0 w-full h-1 bg-red-500/50 animate-pulse"></div>
+            {isProcessing && <div className="absolute top-1/2 left-0 w-full h-1 bg-red-500/50 animate-pulse"></div>}
         </div>
     </div>
   );
@@ -149,20 +181,29 @@ export default function ScanPage() {
                     ref={videoRef}
                     className={cn(
                         'w-full h-full object-cover',
-                        !hasCameraPermission && 'hidden'
+                        !isCameraReady && 'hidden'
                     )}
                     autoPlay
                     playsInline
                     muted
+                    onCanPlay={() => setIsCameraReady(true)}
                 />
+                <canvas ref={canvasRef} className="hidden" />
 
-                {isScanning && hasCameraPermission && <ScannerOverlay />}
+                {isCameraReady && <ScannerOverlay />}
 
                 {hasCameraPermission === undefined && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
                         <Camera className="h-16 w-16 text-muted-foreground mb-4" />
                         <h3 className="font-semibold text-lg">Requesting Camera Access</h3>
                         <p className="text-muted-foreground text-sm">Please wait...</p>
+                    </div>
+                )}
+                
+                {hasCameraPermission && !isCameraReady && (
+                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+                        <Loader2 className="h-16 w-16 text-muted-foreground mb-4 animate-spin" />
+                        <h3 className="font-semibold text-lg">Starting Camera...</h3>
                     </div>
                 )}
 
