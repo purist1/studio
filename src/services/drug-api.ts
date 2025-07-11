@@ -5,10 +5,10 @@ import type { FlagSuspectDrugInput } from '@/ai/flows/flag-suspect-drugs';
 import { ndcDataset } from '@/lib/ndc-data';
 
 interface OpenFDAResult {
-    product_ndc: string;
-    generic_name: string;
-    brand_name: string;
     openfda: {
+        product_ndc?: string[];
+        generic_name?: string[];
+        brand_name?: string[];
         manufacturer_name?: string[];
     };
 }
@@ -17,7 +17,8 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
      try {
         const apiKey = process.env.OPENFDA_API_KEY;
         const searchParams = new URLSearchParams({
-            search: `product_ndc:"${barcode}"`,
+            // Search within the 'openfda' object for the product_ndc field.
+            search: `openfda.product_ndc:"${barcode}"`,
             limit: '1',
         });
 
@@ -25,7 +26,8 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
             searchParams.append('api_key', apiKey);
         }
 
-        const url = `https://api.fda.gov/drug/ndc.json?${searchParams.toString()}`;
+        // Using the drug/label.json endpoint as per the documentation
+        const url = `https://api.fda.gov/drug/label.json?${searchParams.toString()}`;
 
         const response = await fetch(url);
 
@@ -41,7 +43,7 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
         if (data.results && data.results.length > 0) {
             const drugInfo: OpenFDAResult = data.results[0];
             const manufacturer = drugInfo.openfda?.manufacturer_name?.[0] || 'Unknown Manufacturer';
-            const drugName = drugInfo.brand_name || drugInfo.generic_name || 'Unknown Drug Name';
+            const drugName = drugInfo.openfda?.brand_name?.[0] || drugInfo.openfda?.generic_name?.[0] || 'Unknown Drug Name';
 
             return {
                 manufacturer: manufacturer,
