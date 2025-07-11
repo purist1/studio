@@ -2,12 +2,12 @@
 
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {genkitxOpenAI as openai} from 'genkitx-openai';
+import {genkitxOpenAI} from 'genkitx-openai';
 
 export const ai = genkit({
   plugins: [
     googleAI(),
-    openai({apiKey: process.env.OPENAI_API_KEY}),
+    genkitxOpenAI({apiKey: process.env.OPENAI_API_KEY}),
   ],
   logLevel: 'debug',
   model: 'googleai/gemini-2.0-flash',
