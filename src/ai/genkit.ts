@@ -1,6 +1,8 @@
+'use server';
+
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {openai} from 'genkitx-openai';
+import {genkitxOpenAI as openai} from 'genkitx-openai';
 
 export const ai = genkit({
   plugins: [
