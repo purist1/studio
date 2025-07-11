@@ -1,28 +1,25 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for flagging potentially counterfeit drugs.
+ * @fileOverview This file defines a Genkit flow for flagging potentially counterfeit drugs using general AI knowledge.
  *
- * - flagSuspectDrug - An asynchronous function that takes drug data as input and returns a verdict on whether the drug is suspect.
- * - FlagSuspectDrugInput - The input type for the flagSuspectDrug function, representing drug data.
- * - FlagSuspectDrugOutput - The output type for the flagSuspectDrug function, indicating whether the drug is suspect and providing a reason.
+ * - flagSuspectDrug - An asynchronous function that takes a drug barcode and returns a verdict on whether the drug is suspect.
+ * - FlagSuspectDrugInput - The input type for the flagSuspectDrug function.
+ * - FlagSuspectDrugOutput - The output type for the flagSuspectDrug function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const FlagSuspectDrugInputSchema = z.object({
-  manufacturer: z.string().describe('The name of the drug manufacturer.'),
-  productionDate: z.string().describe('The production date of the drug.'),
-  batchNumber: z.string().describe('The batch number of the drug.'),
-  openFDADetails: z.string().optional().describe('Details from OpenFDA, if available.'),
-  gs1Details: z.string().optional().describe('Details from GS1, if available.'),
-  internalDatasetDetails: z.string().optional().describe('Details from internal dataset, if available.'),
+  barcode: z.string().describe('The barcode or NDC of the drug to verify.'),
 });
 export type FlagSuspectDrugInput = z.infer<typeof FlagSuspectDrugInputSchema>;
 
 const FlagSuspectDrugOutputSchema = z.object({
-  isSuspect: z.boolean().describe('Whether the drug is suspected to be counterfeit.'),
-  reason: z.string().describe('The reason for suspecting the drug is counterfeit.'),
+  isSuspect: z.boolean().describe('Whether the drug is suspected to be counterfeit, recalled, or otherwise problematic.'),
+  reason: z.string().describe('A detailed explanation for the verdict, including the drug\'s identity if found.'),
+  drugName: z.string().optional().describe('The identified name of the drug.'),
+  manufacturer: z.string().optional().describe('The identified manufacturer of the drug.'),
 });
 export type FlagSuspectDrugOutput = z.infer<typeof FlagSuspectDrugOutputSchema>;
 
@@ -34,16 +31,14 @@ const flagSuspectDrugPrompt = ai.definePrompt({
   name: 'flagSuspectDrugPrompt',
   input: {schema: FlagSuspectDrugInputSchema},
   output: {schema: FlagSuspectDrugOutputSchema},
-  prompt: `You are an AI assistant designed to identify potentially counterfeit drugs.  Analyze the provided drug data, including manufacturer, production date, batch number, and information from OpenFDA, GS1, and internal datasets to determine if the drug is suspect. Cross-reference the attributes to find inconsistencies that may indicate a fake medication. Return whether the drug is suspect, and the reason why. Focus on inconsistencies between the different data sources to determine if the drug is suspect.
+  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode/NDC and determine if it corresponds to a legitimate product.
 
-Manufacturer: {{{manufacturer}}}
-Production Date: {{{productionDate}}}
-Batch Number: {{{batchNumber}}}
-OpenFDA Details: {{{openFDADetails}}}
-GS1 Details: {{{gs1Details}}}
-Internal Dataset Details: {{{internalDatasetDetails}}}
+Use your extensive knowledge base to:
+1.  Identify the drug name and manufacturer associated with this code: {{{barcode}}}.
+2.  Determine if there are any reasons to suspect this drug. This could include: it being commonly counterfeited, part of a past recall, discontinued, or if the code doesn't correspond to any known drug.
+3.  Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
 
-Is the drug suspect? Provide the reasoning.`,
+If you identify the drug, state its name and manufacturer clearly in your reason. If you cannot identify the drug, state that the code does not match any known products in your database and flag it as suspect.`,
 });
 
 const flagSuspectDrugFlow = ai.defineFlow(
@@ -54,6 +49,12 @@ const flagSuspectDrugFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await flagSuspectDrugPrompt(input);
-    return output!;
+    if (!output) {
+      return {
+        isSuspect: true,
+        reason: 'The AI model could not process the request. Please try again.',
+      };
+    }
+    return output;
   }
 );

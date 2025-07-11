@@ -1,23 +1,24 @@
-
 'use server';
 
-import type { FlagSuspectDrugInput } from '@/ai/flows/flag-suspect-drugs';
+// This service is now used exclusively by the AI Chat tool.
+// The main verification flow no longer uses these direct database lookups.
 import { ndcDataset } from '@/lib/ndc-data';
 
-interface OpenFDAResult {
-    openfda: {
-        product_ndc?: string[];
-        generic_name?: string[];
-        brand_name?: string[];
-        manufacturer_name?: string[];
-    };
+interface DrugApiDetails {
+    manufacturer?: string;
+    productionDate?: string;
+    batchNumber?: string;
+    openFDADetails?: string;
+    gs1Details?: string;
+    internalDatasetDetails?: string;
+    dailymedDetails?: string;
 }
 
-async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugInput>> {
+
+async function searchOpenFDA(barcode: string): Promise<{ openFDADetails?: string, manufacturer?: string }> {
      try {
         const apiKey = process.env.OPENFDA_API_KEY;
         const searchParams = new URLSearchParams({
-            // Search within the 'openfda' object for the product_ndc field.
             search: `openfda.product_ndc:"${barcode}"`,
             limit: '1',
         });
@@ -26,13 +27,11 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
             searchParams.append('api_key', apiKey);
         }
 
-        // Using the drug/label.json endpoint as per the documentation
         const url = `https://api.fda.gov/drug/label.json?${searchParams.toString()}`;
 
         const response = await fetch(url);
 
         if (!response.ok) {
-            console.error(`OpenFDA API request failed with status ${response.status}`);
             return {
                 openFDADetails: `Failed to fetch data from OpenFDA. Status: ${response.status}`,
             };
@@ -41,7 +40,7 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
-            const drugInfo: OpenFDAResult = data.results[0];
+            const drugInfo = data.results[0];
             const manufacturer = drugInfo.openfda?.manufacturer_name?.[0] || 'Unknown Manufacturer';
             const drugName = drugInfo.openfda?.brand_name?.[0] || drugInfo.openfda?.generic_name?.[0] || 'Unknown Drug Name';
 
@@ -51,12 +50,11 @@ async function searchOpenFDA(barcode: string): Promise<Partial<FlagSuspectDrugIn
             };
         } else {
             return {
-                openFDADetails: `No drug found for barcode "${barcode}" in the OpenFDA database. This could be a non-US drug, a non-prescription item, or a counterfeit product.`,
+                openFDADetails: `No drug found for barcode "${barcode}" in the OpenFDA database.`,
             };
         }
 
     } catch (error) {
-        console.error('Error fetching from OpenFDA:', error);
         return {
             openFDADetails: 'An error occurred while connecting to the OpenFDA service.',
         };
@@ -69,8 +67,7 @@ async function searchDailyMed(barcode: string): Promise<{ dailymedDetails?: stri
         const response = await fetch(url);
 
         if (!response.ok) {
-            console.error(`DailyMed API request failed with status ${response.status}`);
-            return {
+             return {
                 dailymedDetails: `Failed to fetch data from DailyMed. Status: ${response.status}`
             };
         }
@@ -90,7 +87,6 @@ async function searchDailyMed(barcode: string): Promise<{ dailymedDetails?: stri
             };
         }
     } catch (error) {
-        console.error('Error fetching from DailyMed:', error);
         return {
             dailymedDetails: 'An error occurred while connecting to the DailyMed service.'
         };
@@ -106,7 +102,7 @@ function formatDate(dateString: string): string {
     return `${year}-${month}-${day}`;
 }
 
-export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<FlagSuspectDrugInput> & { dailymedDetails?: string }> {
+export async function getDrugDetailsFromAPI(barcode: string): Promise<DrugApiDetails> {
     const cleanedBarcode = barcode.replace(/-/g, '');
     
     const internalRecord = ndcDataset.find(
@@ -115,7 +111,7 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
         cleanedBarcode.includes(record.NDC11)
     );
 
-    let details: Partial<FlagSuspectDrugInput> = {
+    let details: DrugApiDetails = {
         gs1Details: 'External data source (e.g., GS1, Orca Scan) not connected. This feature requires API credentials from a provider like orcascan.com.',
     };
 
@@ -125,10 +121,10 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
         let productionDateInfo = formatDate(internalRecord.MarketingStartDate);
         let internalDetailsMessage = `Match found in internal dataset: ${internalRecord.ProprietaryName}, App No: ${internalRecord.ApplicationNumber}. Marketed since: ${productionDateInfo}.`;
         
-        if (internalRecord.MarketingEndDate) {
+        if (internalRecord.MarketingEndDate && new Date(formatDate(internalRecord.MarketingEndDate)) < new Date()) {
             const endDate = formatDate(internalRecord.MarketingEndDate);
             productionDateInfo += ` to ${endDate}`;
-            internalDetailsMessage += ` Discontinued on: ${endDate}. This product should no longer be in circulation.`
+            internalDetailsMessage += ` Discontinued on: ${endDate}. WARNING: This product should no longer be in circulation.`
         }
 
         details.productionDate = productionDateInfo;
@@ -145,12 +141,6 @@ export async function getDrugDetailsFromAPI(barcode: string): Promise<Partial<Fl
     
     if (!details.manufacturer) {
         details.manufacturer = 'N/A';
-    }
-    if (!details.productionDate) {
-        details.productionDate = 'N/A';
-    }
-    if (!details.batchNumber) {
-        details.batchNumber = 'N/A';
     }
 
     return details;
