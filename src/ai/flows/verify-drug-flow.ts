@@ -1,6 +1,7 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity.
+ * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity
+ * by relying on the AI model's general knowledge and web search capabilities.
  *
  * - verifyDrugWithAi - An asynchronous function that takes a drug query and uses
  *   an AI model to get a verification.
@@ -24,7 +25,6 @@ const VerifyDrugOutputSchema = z.object({
   drugName: z.string().optional().describe('The identified name of the drug.'),
   manufacturer: z.string().optional().describe('The identified manufacturer of the drug.'),
   approvalInfo: z.string().optional().describe('Approval information, including dates and regulatory bodies (e.g., NAFDAC, FDA).'),
-  sourceModel: z.string().optional().describe('The AI model that provided the definitive answer.'),
 });
 export type VerifyDrugOutput = z.infer<typeof VerifyDrugOutputSchema>;
 
@@ -32,26 +32,28 @@ export async function verifyDrugWithAi(input: VerifyDrugInput): Promise<VerifyDr
   return verifyDrugFlow(input);
 }
 
-const geminiPrompt = ai.definePrompt({
-  name: 'verifyDrugGemini',
+const verificationPrompt = ai.definePrompt({
+  name: 'verifyDrugPrompt',
   input: {schema: VerifyDrugInputSchema},
   output: {schema: VerifyDrugOutputSchema},
-  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug information and determine if it corresponds to a legitimate product using your internal knowledge base.
+  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug information and determine if it corresponds to a legitimate product using your internal knowledge base and ability to search for information.
 
-- Drug Name (from user): {{{drugName}}}
-- NDC (from user): {{{ndc}}}
-- GTIN (from user): {{{gtin}}}
+  ## User-Provided Information:
+  - Drug Name: {{{drugName}}}
+  - NDC / Barcode: {{{ndc}}}{{{gtin}}}
 
-Your tasks:
-1.  **Identify the Drug**: Based on the user's query, identify the drug's common name and manufacturer. If you cannot identify the drug, you MUST state that it was not identified.
-2.  **Cross-reference with your knowledge**: Use your extensive knowledge base to determine if there are any reasons to suspect this drug. This could include it being commonly counterfeited, part of a past recall, discontinued, or if the query does not correspond to any known drug. Check for inconsistencies between the provided name, NDC, and GTIN.
-3.  **Find Approval Information**: Find and include approval information, especially dates, from regulatory bodies like NAFDAC, FDA, etc., for the identified drug.
-4.  **Form a Verdict**:
-    - If the query does **not match any known drug**, flag it as **suspect**. The reason should state that it's not a recognized drug.
-    - If the drug **is identified**, determine if it's suspect based on your cross-referencing. If everything looks good, mark it as verified.
-    - Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
+  ## Your Task:
+  1.  **Identify the Drug**: Based on the provided information, identify the drug's common name and manufacturer.
+  2.  **Cross-reference and Verify**: Use your extensive knowledge to determine if there are any reasons to suspect this drug. Check for inconsistencies between the provided name and codes. Look for information on recalls, common counterfeiting reports, or if the query details do not correspond to any known drug.
+  3.  **Find Approval Information**: Search for and include approval information from major regulatory bodies like Nigeria's NAFDAC, the US FDA, or the European EMA.
+  4.  **Form a Verdict**:
+      - If the query does **not match any known drug**, you MUST flag it as **suspect**. The reason should state that it's not a recognized drug.
+      - If the information is inconsistent (e.g., the NDC belongs to a different drug than the name provided), you MUST flag it as **suspect**.
+      - If the drug is identified and there are no red flags, mark it as **not suspect**.
+  5.  **Provide a Reason**: Write a clear, concise explanation for your verdict. Be specific about your findings.
 
-Synthesize all this information into a final verdict.`,
+  Synthesize all this information into a final verdict.
+  `,
 });
 
 const verifyDrugFlow = ai.defineFlow(
@@ -62,20 +64,19 @@ const verifyDrugFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const {output} = await geminiPrompt(input);
+      const {output} = await verificationPrompt(input);
       if (output) {
-        return { ...output, sourceModel: 'Gemini 1.5 Pro' };
+        return output;
       }
-      throw new Error("The AI model returned an empty response.");
+      throw new Error("The AI model returned an empty or invalid response.");
     } catch (e) {
       console.error("AI verification failed.", e);
       return {
         isSuspect: true,
         reason: "The AI model failed to process the request or returned an invalid response. Please try again or check the system status. This attempt has been logged.",
-        drugName: "N/A",
+        drugName: input.drugName || "N/A",
         manufacturer: "N/A",
         approvalInfo: "N/A",
-        sourceModel: "Error Handler"
       };
     }
   }

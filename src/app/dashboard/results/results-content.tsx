@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,9 +6,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit, CheckCircle, Database } from 'lucide-react';
-import type { FlagSuspectDrugOutput } from '@/ai/flows/flag-suspect-drug-flow';
-import { flagSuspectDrug } from '@/ai/flows/flag-suspect-drug-flow';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit, CheckCircle, FileText } from 'lucide-react';
+import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
+import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
 import type { Scan, User } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -23,7 +22,7 @@ export function ResultsContent() {
 
   const { toast } = useToast();
 
-  const [analysis, setAnalysis] = useState<FlagSuspectDrugOutput | null>(null);
+  const [analysis, setAnalysis] = useState<VerifyDrugOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -46,24 +45,14 @@ export function ResultsContent() {
       return;
     }
 
-    const verifyDrug = async () => {
+    const runVerification = async () => {
       setIsLoading(true);
       const input = { drugName: drugName ?? undefined, ndc: ndc ?? undefined, gtin: gtin ?? undefined };
+      
+      let result: VerifyDrugOutput | null = null;
       try {
-        const result = await flagSuspectDrug(input);
+        result = await verifyDrugWithAi(input);
         setAnalysis(result);
-
-        const newScan: Omit<Scan, 'id' | 'timestamp'> = {
-            userId: currentUser.id,
-            barcode: ndc || gtin || 'N/A',
-            drugName: result.drugName || drugName || null,
-            manufacturer: result.manufacturer || null,
-            status: result.isSuspect ? 'Suspect' : 'Verified',
-            reason: result.reason,
-            isFlagged: result.isSuspect,
-        };
-        await addScanToHistory(newScan);
-
       } catch (error) {
         console.error('Verification failed:', error);
         toast({
@@ -71,25 +60,22 @@ export function ResultsContent() {
           title: 'Error',
           description: 'Could not perform drug verification. The AI models may be temporarily unavailable.',
         });
-        
-        const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
+      } finally {
+         const newScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
             barcode: ndc || gtin || 'N/A',
-            drugName: drugName || 'N/A',
-            manufacturer: 'N/A',
-            status: 'Unknown',
-            reason: 'AI analysis failed.',
-            isFlagged: true,
+            drugName: result?.drugName || drugName || 'N/A',
+            manufacturer: result?.manufacturer || 'N/A',
+            status: result ? (result.isSuspect ? 'Suspect' : 'Verified') : 'Unknown',
+            reason: result?.reason || 'AI analysis failed to complete.',
+            isFlagged: result?.isSuspect ?? true,
         };
-        await addScanToHistory(failedScan);
-
-        setAnalysis(null); 
-      } finally {
+        await addScanToHistory(newScan);
         setIsLoading(false);
       }
     };
 
-    verifyDrug();
+    runVerification();
   }, [drugName, ndc, gtin, currentUser, router, toast]);
 
   if (isLoading) {
@@ -97,8 +83,8 @@ export function ResultsContent() {
         <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
             <div className="text-center text-muted-foreground">
                 <BrainCircuit className="h-12 w-12 mx-auto animate-pulse mb-4" />
-                <p className="font-semibold">Checking databases and consulting AI specialist...</p>
-                <p className="text-sm">Please wait while we cross-reference all available data.</p>
+                <p className="font-semibold">Consulting AI pharmaceutical specialist...</p>
+                <p className="text-sm">Please wait while we analyze the drug information.</p>
             </div>
         </div>
     );
@@ -124,7 +110,7 @@ export function ResultsContent() {
                     </div>
                 </div>
                  <div className="text-sm text-muted-foreground bg-background/50 px-3 py-1 rounded-full border">
-                     Analysis by: <span className="font-semibold text-primary">OpenFDA + Gemini AI</span>
+                     Analysis by: <span className="font-semibold text-primary">Gemini AI</span>
                  </div>
             </div>
         </CardHeader>
@@ -142,26 +128,24 @@ export function ResultsContent() {
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                             <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Official Drug Name</p>
+                                <p className="text-sm font-medium text-muted-foreground">Identified Drug Name</p>
                                 <p className="font-semibold text-lg">{analysis.drugName || 'Not Identified'}</p>
                             </div>
                              <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Official Manufacturer</p>
+                                <p className="text-sm font-medium text-muted-foreground">Identified Manufacturer</p>
                                 <p className="font-semibold text-lg">{analysis.manufacturer || 'Not Identified'}</p>
                             </div>
                         </div>
-                        {analysis.apiData && (
-                            <Accordion type="single" collapsible className="w-full">
+                        {analysis.approvalInfo && (
+                            <Accordion type="single" collapsible className="w-full pt-2">
                                 <AccordionItem value="item-1">
                                     <AccordionTrigger>
                                         <div className="flex items-center gap-2">
-                                            <Database className="h-4 w-4"/> View Database Details
+                                            <FileText className="h-4 w-4"/> View Approval Details
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent>
-                                        <pre className="bg-muted p-4 rounded-md text-xs overflow-x-auto">
-                                            {JSON.stringify(analysis.apiData, null, 2)}
-                                        </pre>
+                                        <p className="text-muted-foreground whitespace-pre-wrap">{analysis.approvalInfo}</p>
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>

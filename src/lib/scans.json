@@ -1,6 +1,17 @@
 [
   {
     "userId": "1",
+    "barcode": "07640128012276",
+    "drugName": "avastin bevacizumab",
+    "manufacturer": "Not Identified",
+    "status": "Suspect",
+    "reason": "No data found in the OpenFDA database for the provided GTIN. This is a major red flag and suggests the drug may be counterfeit.",
+    "isFlagged": true,
+    "id": "1752246562271",
+    "timestamp": "2025-07-11T15:09:22.271Z"
+  },
+  {
+    "userId": "1",
     "barcode": "N/A",
     "drugName": "Amoxicillin",
     "manufacturer": null,
