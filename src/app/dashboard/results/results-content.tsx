@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot } from 'lucide-react';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit } from 'lucide-react';
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
@@ -61,7 +61,7 @@ export function ResultsContent() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not perform drug verification. The AI model may be temporarily unavailable.',
+          description: 'Could not perform drug verification. The AI models may be temporarily unavailable.',
         });
         
         const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
@@ -88,8 +88,8 @@ export function ResultsContent() {
     return (
         <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
             <div className="text-center text-muted-foreground">
-                <ScanLine className="h-12 w-12 mx-auto animate-pulse mb-4" />
-                <p className="font-semibold">Contacting AI Assistant for analysis...</p>
+                <BrainCircuit className="h-12 w-12 mx-auto animate-pulse mb-4" />
+                <p className="font-semibold">Consulting multiple AI experts for analysis...</p>
                 <p className="text-sm">Please wait while we check all available data sources.</p>
             </div>
         </div>
@@ -114,6 +114,11 @@ export function ResultsContent() {
                         </CardDescription>
                     </div>
                 </div>
+                 {analysis?.sourceModel && (
+                    <div className="text-sm text-muted-foreground bg-background/50 px-3 py-1 rounded-full border">
+                        Verified by: <span className="font-semibold text-primary">{analysis.sourceModel}</span>
+                    </div>
+                 )}
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">

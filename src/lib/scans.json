@@ -1,5 +1,15 @@
 [
   {
+    "barcode": "paracetamol",
+    "drugName": "Paracetamol (Acetaminophen)",
+    "manufacturer": "Multiple manufacturers",
+    "status": "Verified",
+    "reason": "Paracetamol, also known as acetaminophen, is a widely used analgesic and antipyretic medication. It is generally considered safe and effective when used as directed. There are no current recalls or widespread reports of counterfeiting for paracetamol from major regulatory bodies. However, like all drugs, it should be obtained from reputable sources to ensure quality and authenticity.",
+    "isFlagged": false,
+    "id": "1752235292857",
+    "timestamp": "2025-07-11T12:01:32.857Z"
+  },
+  {
     "userId": "1",
     "barcode": "1234512301",
     "drugName": "Unknown",
