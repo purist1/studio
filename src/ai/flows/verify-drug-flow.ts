@@ -9,10 +9,12 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const VerifyDrugInputSchema = z.object({
-  query: z.string().describe('The barcode, NDC, or name of the drug to verify.'),
+  drugName: z.string().optional().describe("The name of the drug as it appears on the packaging."),
+  ndc: z.string().optional().describe("The National Drug Code (NDC) found on the packaging."),
+  gtin: z.string().optional().describe("The Global Trade Item Number (GTIN) from the barcode."),
 });
 export type VerifyDrugInput = z.infer<typeof VerifyDrugInputSchema>;
 
@@ -34,13 +36,15 @@ const geminiPrompt = ai.definePrompt({
   name: 'verifyDrugGemini',
   input: {schema: VerifyDrugInputSchema},
   output: {schema: VerifyDrugOutputSchema},
-  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode, NDC, or name and determine if it corresponds to a legitimate product using your internal knowledge base.
+  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug information and determine if it corresponds to a legitimate product using your internal knowledge base.
 
-- User Query: {{{query}}}
+- Drug Name (from user): {{{drugName}}}
+- NDC (from user): {{{ndc}}}
+- GTIN (from user): {{{gtin}}}
 
 Your tasks:
 1.  **Identify the Drug**: Based on the user's query, identify the drug's common name and manufacturer. If you cannot identify the drug, you MUST state that it was not identified.
-2.  **Cross-reference with your knowledge**: Use your extensive knowledge base to determine if there are any reasons to suspect this drug. This could include it being commonly counterfeited, part of a past recall, discontinued, or if the query does not correspond to any known drug.
+2.  **Cross-reference with your knowledge**: Use your extensive knowledge base to determine if there are any reasons to suspect this drug. This could include it being commonly counterfeited, part of a past recall, discontinued, or if the query does not correspond to any known drug. Check for inconsistencies between the provided name, NDC, and GTIN.
 3.  **Find Approval Information**: Find and include approval information, especially dates, from regulatory bodies like NAFDAC, FDA, etc., for the identified drug.
 4.  **Form a Verdict**:
     - If the query does **not match any known drug**, flag it as **suspect**. The reason should state that it's not a recognized drug.
@@ -56,19 +60,17 @@ const verifyDrugFlow = ai.defineFlow(
     inputSchema: VerifyDrugInputSchema,
     outputSchema: VerifyDrugOutputSchema,
   },
-  async ({ query }) => {
+  async (input) => {
     try {
-      const {output} = await geminiPrompt({ query });
+      const {output} = await geminiPrompt(input);
       if (output) {
         return { ...output, sourceModel: 'Gemini 1.5 Pro' };
       }
-      // This path is taken if the model returns a valid response, but the output is empty.
       throw new Error("The AI model returned an empty response.");
     } catch (e) {
       console.error("AI verification failed.", e);
-       // Handle the failure gracefully by returning a specific "Unknown" status.
       return {
-        isSuspect: true, // Treat failures as suspect for safety.
+        isSuspect: true,
         reason: "The AI model failed to process the request or returned an invalid response. Please try again or check the system status. This attempt has been logged.",
         drugName: "N/A",
         manufacturer: "N/A",

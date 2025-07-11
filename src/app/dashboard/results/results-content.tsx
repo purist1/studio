@@ -7,56 +7,56 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit, CheckCircle } from 'lucide-react';
-import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
-import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit, CheckCircle, Database } from 'lucide-react';
+import type { FlagSuspectDrugOutput } from '@/ai/flows/flag-suspect-drug-flow';
+import { flagSuspectDrug } from '@/ai/flows/flag-suspect-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
 import type { Scan, User } from '@/lib/types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export function ResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const query = searchParams.get('query');
+  const drugName = searchParams.get('drugName');
+  const ndc = searchParams.get('ndc');
+  const gtin = searchParams.get('gtin');
+
   const { toast } = useToast();
 
-  const [analysis, setAnalysis] = useState<VerifyDrugOutput | null>(null);
+  const [analysis, setAnalysis] = useState<FlagSuspectDrugOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // This code runs on the client after hydration to get the user from session storage.
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
         setCurrentUser(JSON.parse(userStr));
     } else {
-        // If no user, we can't proceed. Redirect to login.
         router.replace('/');
     }
   }, [router]);
 
   useEffect(() => {
-    // This effect runs when the 'currentUser' or 'query' changes.
-    // It ensures we only run verification after we have the user data.
-    if (!query) {
+    if (!currentUser) {
+        return;
+    }
+
+    if (!drugName && !ndc && !gtin) {
       router.replace('/dashboard/scan');
       return;
-    }
-    
-    if (!currentUser) {
-        // currentUser is not yet loaded, wait for the first effect to set it.
-        return;
     }
 
     const verifyDrug = async () => {
       setIsLoading(true);
+      const input = { drugName: drugName ?? undefined, ndc: ndc ?? undefined, gtin: gtin ?? undefined };
       try {
-        const result = await verifyDrugWithAi({ query });
+        const result = await flagSuspectDrug(input);
         setAnalysis(result);
 
         const newScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
-            barcode: query,
-            drugName: result.drugName || null,
+            barcode: ndc || gtin || 'N/A',
+            drugName: result.drugName || drugName || null,
             manufacturer: result.manufacturer || null,
             status: result.isSuspect ? 'Suspect' : 'Verified',
             reason: result.reason,
@@ -72,11 +72,10 @@ export function ResultsContent() {
           description: 'Could not perform drug verification. The AI models may be temporarily unavailable.',
         });
         
-        // Even on failure, we log the attempt.
         const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
-            barcode: query,
-            drugName: 'N/A',
+            barcode: ndc || gtin || 'N/A',
+            drugName: drugName || 'N/A',
             manufacturer: 'N/A',
             status: 'Unknown',
             reason: 'AI analysis failed.',
@@ -91,21 +90,21 @@ export function ResultsContent() {
     };
 
     verifyDrug();
-  }, [query, currentUser, router, toast]);
+  }, [drugName, ndc, gtin, currentUser, router, toast]);
 
   if (isLoading) {
     return (
         <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
             <div className="text-center text-muted-foreground">
                 <BrainCircuit className="h-12 w-12 mx-auto animate-pulse mb-4" />
-                <p className="font-semibold">Consulting multiple AI experts for analysis...</p>
-                <p className="text-sm">Please wait while we check all available data sources.</p>
+                <p className="font-semibold">Checking databases and consulting AI specialist...</p>
+                <p className="text-sm">Please wait while we cross-reference all available data.</p>
             </div>
         </div>
     );
   }
 
-  const isSuspect = analysis?.isSuspect ?? true; // Default to suspect if analysis is null
+  const isSuspect = analysis?.isSuspect ?? true;
   const cardColor = isSuspect ? 'border-red-500/50 bg-red-500/5' : 'border-green-500/50 bg-green-500/5';
   const titleText = isSuspect ? 'Suspect Drug' : 'Verified Drug';
   const TitleIcon = isSuspect ? AlertCircle : CheckCircle;
@@ -120,15 +119,13 @@ export function ResultsContent() {
                     <div>
                         <CardTitle className="text-3xl font-bold">{titleText}</CardTitle>
                         <CardDescription className="font-semibold">
-                            Searched for: {query}
+                            Verification complete for: {ndc || gtin || drugName}
                         </CardDescription>
                     </div>
                 </div>
-                 {analysis?.sourceModel && (
-                    <div className="text-sm text-muted-foreground bg-background/50 px-3 py-1 rounded-full border">
-                        Verified by: <span className="font-semibold text-primary">{analysis.sourceModel}</span>
-                    </div>
-                 )}
+                 <div className="text-sm text-muted-foreground bg-background/50 px-3 py-1 rounded-full border">
+                     Analysis by: <span className="font-semibold text-primary">OpenFDA + Gemini AI</span>
+                 </div>
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
@@ -140,24 +137,35 @@ export function ResultsContent() {
                    {analysis ? (
                     <>
                         <div className="space-y-1">
-                            <h4 className="font-semibold">Reasoning:</h4>
+                            <h4 className="font-semibold">Verdict:</h4>
                             <p className="text-muted-foreground whitespace-pre-wrap">{analysis.reason}</p>
                         </div>
-
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                             <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Drug Name</p>
+                                <p className="text-sm font-medium text-muted-foreground">Official Drug Name</p>
                                 <p className="font-semibold text-lg">{analysis.drugName || 'Not Identified'}</p>
                             </div>
                              <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
+                                <p className="text-sm font-medium text-muted-foreground">Official Manufacturer</p>
                                 <p className="font-semibold text-lg">{analysis.manufacturer || 'Not Identified'}</p>
                             </div>
-                              <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Approval Info</p>
-                                <p className="font-semibold text-lg">{analysis.approvalInfo || 'Not Available'}</p>
-                            </div>
                         </div>
+                        {analysis.apiData && (
+                            <Accordion type="single" collapsible className="w-full">
+                                <AccordionItem value="item-1">
+                                    <AccordionTrigger>
+                                        <div className="flex items-center gap-2">
+                                            <Database className="h-4 w-4"/> View Database Details
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <pre className="bg-muted p-4 rounded-md text-xs overflow-x-auto">
+                                            {JSON.stringify(analysis.apiData, null, 2)}
+                                        </pre>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        )}
                     </>
                    ) : (
                     <p className="text-muted-foreground text-center py-8">

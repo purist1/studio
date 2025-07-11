@@ -13,10 +13,22 @@ export default function ScanPage() {
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const query = formData.get('query') as string;
-    if (query) {
-      router.push(`/dashboard/results?query=${encodeURIComponent(query)}`);
+    const drugName = formData.get('drugName') as string;
+    const ndc = formData.get('ndc') as string;
+    const gtin = formData.get('gtin') as string;
+    
+    if (!drugName && !ndc && !gtin) {
+        // Simple validation: at least one field must be filled
+        alert("Please fill in at least one field.");
+        return;
     }
+
+    const params = new URLSearchParams();
+    if (drugName) params.set('drugName', drugName);
+    if (ndc) params.set('ndc', ndc);
+    if (gtin) params.set('gtin', gtin);
+    
+    router.push(`/dashboard/results?${params.toString()}`);
   };
 
   return (
@@ -29,17 +41,23 @@ export default function ScanPage() {
             </div>
             <CardTitle className="text-2xl pt-4">Drug Verification Center</CardTitle>
             <CardDescription>
-              Enter a drug's name, barcode, or NDC number to verify its authenticity.
+              Enter the information from the drug's packaging to verify its authenticity.
             </CardDescription>
           </CardHeader>
           
           <form onSubmit={handleManualSubmit}>
-            <CardContent>
-                <div className="space-y-2 pt-4">
-                    <Label htmlFor="query-input" className="sr-only">
-                        Enter Drug Name, Barcode, or NDC
-                    </Label>
-                    <Input id="query-input" name="query" placeholder="e.g., Amoxicillin or 0093-8547-52" required className="text-center text-lg h-12"/>
+            <CardContent className="space-y-6 pt-6">
+                <div className="space-y-2">
+                    <Label htmlFor="drugName-input">Drug Name (as seen on the carton)</Label>
+                    <Input id="drugName-input" name="drugName" placeholder="e.g., Amoxicillin 500mg" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="ndc-input">NDC Number (National Drug Code)</Label>
+                    <Input id="ndc-input" name="ndc" placeholder="e.g., 0093-8547-52" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="gtin-input">GTIN Number (from barcode)</Label>
+                    <Input id="gtin-input" name="gtin" placeholder="e.g., 00312345678906" />
                 </div>
             </CardContent>
             <CardFooter>
