@@ -18,9 +18,9 @@ export interface OpenFDAResult {
  * @returns The first matching result from the API, or null if not found or an error occurs.
  */
 export async function searchOpenFDA(barcode: string): Promise<OpenFDAResult | null> {
-  // The API supports both dashed and non-dashed NDC formats.
-  // We'll search by product_ndc, which is a primary identifier.
-  const searchField = "product_ndc";
+  // The API is particular about searching fields with special characters.
+  // Using `openfda.product_ndc` is necessary for an exact match on the dashed NDC format.
+  const searchField = "openfda.product_ndc";
   const url = `https://api.fda.gov/drug/ndc.json?search=${searchField}:"${barcode}"&limit=1`;
 
   try {
