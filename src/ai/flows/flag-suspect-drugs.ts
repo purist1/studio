@@ -20,6 +20,7 @@ const FlagSuspectDrugOutputSchema = z.object({
   reason: z.string().describe('A detailed explanation for the verdict, including the drug\'s identity if found.'),
   drugName: z.string().optional().describe('The identified name of the drug.'),
   manufacturer: z.string().optional().describe('The identified manufacturer of the drug.'),
+  approvalInfo: z.string().optional().describe('Approval information, including dates and regulatory bodies (e.g., NAFDAC, FDA).')
 });
 export type FlagSuspectDrugOutput = z.infer<typeof FlagSuspectDrugOutputSchema>;
 
@@ -35,8 +36,9 @@ const flagSuspectDrugPrompt = ai.definePrompt({
 
 Use your extensive knowledge base to:
 1.  Identify the drug name and manufacturer associated with this code: {{{barcode}}}.
-2.  Determine if there are any reasons to suspect this drug. This could include: it being commonly counterfeited, part of a past recall, discontinued, or if the code doesn't correspond to any known drug.
-3.  Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
+2.  Find and include approval information, especially dates, from regulatory bodies like NAFDAC, FDA, etc. for the identified drug.
+3.  Determine if there are any reasons to suspect this drug. This could include: it being commonly counterfeited, part of a past recall, discontinued, or if the code doesn't correspond to any known drug.
+4.  Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
 
 If you identify the drug, state its name and manufacturer clearly in your reason. If you cannot identify the drug, state that the code does not match any known products in your database and flag it as suspect.`,
 });

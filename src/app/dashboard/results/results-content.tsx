@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, CheckCircle2, FlaskConical, ScanLine, AlertCircle, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FlaskConical, ScanLine, AlertCircle, Info, FileCheck2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 
@@ -73,7 +73,7 @@ export function ResultsContent() {
     );
   }
 
-  const { isSuspect, reason, drugName, manufacturer } = result;
+  const { isSuspect, reason, drugName, manufacturer, approvalInfo } = result;
   const status = isSuspect ? 'Suspect' : 'Verified';
   const statusIcon = isSuspect ? (
     <AlertTriangle className="h-8 w-8 text-destructive" />
@@ -119,6 +119,16 @@ export function ResultsContent() {
                 <div className="flex items-center gap-3"><FlaskConical className="h-5 w-5 text-muted-foreground" /><span className="font-semibold">Manufacturer:</span> {manufacturer || 'Not Identified'}</div>
               </div>
             </div>
+
+            {approvalInfo && (
+                <>
+                <Separator />
+                <div>
+                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2"><FileCheck2 className="h-5 w-5 text-accent"/>Regulatory Approval</h3>
+                    <p className="text-sm text-muted-foreground">{approvalInfo}</p>
+                </div>
+                </>
+            )}
             
         </CardContent>
         <CardFooter className="flex justify-end gap-4 bg-muted/50 p-6">
