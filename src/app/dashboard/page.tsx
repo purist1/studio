@@ -1,10 +1,14 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScanLine, CheckCircle2, AlertTriangle, HelpCircle, MessageSquare } from 'lucide-react';
-import { mockScans } from '@/lib/data';
+import { ScanLine, CheckCircle2, AlertTriangle, HelpCircle, MessageSquare, Loader2 } from 'lucide-react';
+import { getScanHistory } from '@/services/scan-history';
 import type { Scan } from '@/lib/types';
+import { format } from 'date-fns';
 
 const statusIcons: { [key in Scan['status']]: React.ReactNode } = {
   Verified: <CheckCircle2 className="h-5 w-5 text-green-500" />,
@@ -20,7 +24,27 @@ const statusColors: { [key in Scan['status']]: string } = {
 
 
 export default function DashboardPage() {
-  const recentScans = mockScans.slice(0, 3);
+  const [recentScans, setRecentScans] = useState<Scan[]>([]);
+  const [totalScans, setTotalScans] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsLoading(true);
+      try {
+        const history = await getScanHistory();
+        setRecentScans(history.slice(0, 3));
+        setTotalScans(history.length);
+      } catch (error) {
+        console.error("Failed to fetch scan history", error);
+        setRecentScans([]);
+        setTotalScans(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   return (
     <div className="container py-8">
@@ -52,20 +76,25 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentScans.length > 0 ? (
+            {isLoading ? (
+               <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin mb-2"/>
+                  <p>Loading recent scans...</p>
+              </div>
+            ) : recentScans.length > 0 ? (
               recentScans.map((scan) => (
                 <div key={scan.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
                     {statusIcons[scan.status]}
                     <div>
-                      <p className="font-semibold">{scan.drugName}</p>
-                      <p className="text-sm text-muted-foreground">{scan.manufacturer} - {scan.barcode}</p>
+                      <p className="font-semibold">{scan.drugName || 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground">{scan.manufacturer || 'N/A'} - {scan.barcode}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                      <Badge variant="outline" className={statusColors[scan.status]}>{scan.status}</Badge>
                      <span className="text-sm text-muted-foreground hidden md:block">
-                        {scan.timestamp.toLocaleDateString()}
+                        {format(new Date(scan.timestamp), 'PP')}
                      </span>
                   </div>
                 </div>
@@ -76,7 +105,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-            {mockScans.length > 3 && (
+            {totalScans > 3 && (
                  <div className="mt-6 text-center">
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/history">View All Scans</Link>

@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { FlaskConical, ScanLine, AlertCircle, Info, Bot, Database } from 'lucide-react';
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
+import { addScanToHistory } from '@/services/scan-history';
+import type { Scan } from '@/lib/types';
 
 export function ResultsContent() {
   const router = useRouter();
@@ -30,6 +32,19 @@ export function ResultsContent() {
       try {
         const result = await verifyDrugWithAi({ barcode });
         setAnalysis(result);
+
+        // Add the result to the scan history
+        const newScan: Omit<Scan, 'id' | 'timestamp'> = {
+            userId: '1', // Mock user ID
+            barcode: barcode,
+            drugName: result.drugName || null,
+            manufacturer: result.manufacturer || null,
+            status: result.isSuspect ? 'Suspect' : 'Verified',
+            reason: result.reason,
+            isFlagged: result.isSuspect,
+        };
+        await addScanToHistory(newScan);
+
       } catch (error) {
         console.error('Verification failed:', error);
         toast({
@@ -37,6 +52,19 @@ export function ResultsContent() {
           title: 'Error',
           description: 'Could not perform drug verification. The AI model may be temporarily unavailable.',
         });
+        
+        // Even if AI fails, log the attempt
+        const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
+            userId: '1',
+            barcode: barcode,
+            drugName: 'N/A',
+            manufacturer: 'N/A',
+            status: 'Unknown',
+            reason: 'AI analysis failed.',
+            isFlagged: true,
+        };
+        await addScanToHistory(failedScan);
+
         setAnalysis(null); 
       } finally {
         setIsLoading(false);

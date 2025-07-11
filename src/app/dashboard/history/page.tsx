@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -18,22 +18,42 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { mockScans } from '@/lib/data';
 import type { Scan } from '@/lib/types';
-import { ListFilter, Search, FileDown } from 'lucide-react';
+import { getScanHistory } from '@/services/scan-history';
+import { ListFilter, Search, FileDown, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 const statusColors: { [key in Scan['status']]: string } = {
-    Verified: 'bg-green-100 text-green-800 border-green-200',
-    Suspect: 'bg-red-100 text-red-800 border-red-200',
-    Unknown: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  Verified: 'bg-green-100 text-green-800 border-green-200',
+  Suspect: 'bg-red-100 text-red-800 border-red-200',
+  Unknown: 'bg-yellow-100 text-yellow-800 border-yellow-200',
 };
 
 export default function HistoryPage() {
+  const [scans, setScans] = useState<Scan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilters, setStatusFilters] = useState<Set<Scan['status']>>(new Set());
 
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsLoading(true);
+      try {
+        const history = await getScanHistory();
+        // The scans are stored with the latest first, so we reverse for chronological display if needed, but for history latest on top is fine.
+        setScans(history);
+      } catch (error) {
+        console.error('Failed to fetch scan history:', error);
+        setScans([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
+
   const filteredScans = useMemo(() => {
-    return mockScans
+    return scans
       .filter((scan) => {
         if (statusFilters.size === 0) return true;
         return statusFilters.has(scan.status);
@@ -41,12 +61,12 @@ export default function HistoryPage() {
       .filter((scan) => {
         const search = searchTerm.toLowerCase();
         return (
-          scan.drugName.toLowerCase().includes(search) ||
-          scan.manufacturer.toLowerCase().includes(search) ||
+          (scan.drugName?.toLowerCase() || '').includes(search) ||
+          (scan.manufacturer?.toLowerCase() || '').includes(search) ||
           scan.barcode.toLowerCase().includes(search)
         );
       });
-  }, [searchTerm, statusFilters]);
+  }, [searchTerm, statusFilters, scans]);
 
   const toggleStatusFilter = (status: Scan['status']) => {
     setStatusFilters((prev) => {
@@ -131,16 +151,22 @@ export default function HistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredScans.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                  </TableCell>
+                </TableRow>
+              ) : filteredScans.length > 0 ? (
                 filteredScans.map((scan) => (
                   <TableRow key={scan.id}>
-                    <TableCell className="font-medium">{scan.drugName}</TableCell>
-                    <TableCell>{scan.manufacturer}</TableCell>
+                    <TableCell className="font-medium">{scan.drugName || 'N/A'}</TableCell>
+                    <TableCell>{scan.manufacturer || 'N/A'}</TableCell>
                     <TableCell className="text-muted-foreground">{scan.barcode}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={statusColors[scan.status]}>{scan.status}</Badge>
                     </TableCell>
-                    <TableCell>{scan.timestamp.toLocaleDateString()}</TableCell>
+                    <TableCell>{format(new Date(scan.timestamp), 'PPp')}</TableCell>
                   </TableRow>
                 ))
               ) : (
