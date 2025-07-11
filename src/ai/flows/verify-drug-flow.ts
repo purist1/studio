@@ -1,14 +1,17 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity using only the AI's general knowledge.
+ * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity
+ * by cross-referencing information from the OpenFDA API with the AI's general knowledge.
  *
- * - verifyDrugWithAi - An asynchronous function that takes a drug barcode and returns a verdict on whether the drug is suspect.
+ * - verifyDrugWithAi - An asynchronous function that takes a drug barcode, queries OpenFDA,
+ *   and then uses an AI model to analyze the combined data.
  * - VerifyDrugInput - The input type for the verifyDrugWithAi function.
  * - VerifyDrugOutput - The output type for the verifyDrugWithAi function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { searchOpenFDA, type OpenFDAResult } from '@/services/openfda-api';
 
 const VerifyDrugInputSchema = z.object({
   barcode: z.string().describe('The barcode or NDC of the drug to verify.'),
@@ -24,23 +27,43 @@ const VerifyDrugOutputSchema = z.object({
 });
 export type VerifyDrugOutput = z.infer<typeof VerifyDrugOutputSchema>;
 
+// Define a new input schema for the prompt that includes the OpenFDA data.
+const PromptInputSchema = z.object({
+  barcode: z.string(),
+  openfdaData: z.custom<OpenFDAResult>().optional(),
+});
+
 export async function verifyDrugWithAi(input: VerifyDrugInput): Promise<VerifyDrugOutput> {
   return verifyDrugFlow(input);
 }
 
 const verifyDrugPrompt = ai.definePrompt({
   name: 'verifyDrugPrompt',
-  input: {schema: VerifyDrugInputSchema},
+  input: {schema: PromptInputSchema},
   output: {schema: VerifyDrugOutputSchema},
   prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode/NDC and determine if it corresponds to a legitimate product.
 
-Use your extensive knowledge base to:
-1.  Identify the drug name and manufacturer associated with this code: {{{barcode}}}.
-2.  Find and include approval information, especially dates, from regulatory bodies like NAFDAC, FDA, etc. for the identified drug.
-3.  Determine if there are any reasons to suspect this drug. This could include: it being commonly counterfeited, part of a past recall, discontinued, or if the code doesn't correspond to any known drug.
-4.  Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
+You have been given data from the official OpenFDA database. Use this as your primary source of truth.
 
-If you identify the drug, state its name and manufacturer clearly in your reason. If you cannot identify the drug, state that the code does not match any known products in your database and flag it as suspect.`,
+- Barcode/NDC: {{{barcode}}}
+- OpenFDA Data: {{#if openfdaData}}
+    - Manufacturer: {{openfdaData.manufacturer_name.[0]}}
+    - Brand Name: {{openfdaData.brand_name.[0]}}
+    - Generic Name: {{openfdaData.generic_name.[0]}}
+  {{else}}
+    No data found in the OpenFDA database for this code.
+  {{/if}}
+
+Your tasks:
+1.  **Analyze the OpenFDA Data**: If data is present, treat it as the ground truth for the drug's name and manufacturer.
+2.  **Cross-reference with your knowledge**: Use your extensive knowledge base to determine if there are any reasons to suspect this drug, even with the FDA data. This could include it being commonly counterfeited, part of a past recall, or discontinued.
+3.  **Find Approval Information**: Find and include approval information, especially dates, from regulatory bodies like NAFDAC, FDA, etc., for the identified drug.
+4.  **Form a Verdict**:
+    - If the code has **no match in the OpenFDA database**, flag it as **suspect**. The reason should state that it's not found in the official FDA database.
+    - If the code **is found**, determine if it's suspect based on your cross-referencing. If everything looks good, mark it as verified.
+    - Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
+
+Synthesize all this information into a final verdict.`,
 });
 
 const verifyDrugFlow = ai.defineFlow(
@@ -49,8 +72,13 @@ const verifyDrugFlow = ai.defineFlow(
     inputSchema: VerifyDrugInputSchema,
     outputSchema: VerifyDrugOutputSchema,
   },
-  async input => {
-    const {output} = await verifyDrugPrompt(input);
+  async ({ barcode }) => {
+    // 1. Fetch data from OpenFDA
+    const openfdaData = await searchOpenFDA(barcode);
+
+    // 2. Call the AI model with the combined data
+    const {output} = await verifyDrugPrompt({ barcode, openfdaData });
+
     if (!output) {
       throw new Error('The AI model could not process the request. Please try again.');
     }
