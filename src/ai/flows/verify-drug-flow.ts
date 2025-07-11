@@ -1,10 +1,9 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity
- * by chaining multiple AI models for robustness.
+ * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity.
  *
- * - verifyDrugWithAi - An asynchronous function that takes a drug query and tries
- *   a sequence of AI models (Gemini, OpenAI) to get a verification.
+ * - verifyDrugWithAi - An asynchronous function that takes a drug query and uses
+ *   the Gemini AI model to get a verification.
  * - VerifyDrugInput - The input type for the verifyDrugWithAi function.
  * - VerifyDrugOutput - The output type for the verifyDrugWithAi function.
  */
@@ -31,7 +30,11 @@ export async function verifyDrugWithAi(input: VerifyDrugInput): Promise<VerifyDr
   return verifyDrugFlow(input);
 }
 
-const basePrompt = `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode, NDC, or name and determine if it corresponds to a legitimate product using your internal knowledge base.
+const geminiPrompt = ai.definePrompt({
+  name: 'verifyDrugGemini',
+  input: {schema: VerifyDrugInputSchema},
+  output: {schema: VerifyDrugOutputSchema},
+  prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode, NDC, or name and determine if it corresponds to a legitimate product using your internal knowledge base.
 
 - User Query: {{{query}}}
 
@@ -44,23 +47,9 @@ Your tasks:
     - If the drug **is identified**, determine if it's suspect based on your cross-referencing. If everything looks good, mark it as verified.
     - Provide a clear verdict ('isSuspect') and a concise, well-reasoned explanation.
 
-Synthesize all this information into a final verdict.`;
-
-const geminiPrompt = ai.definePrompt({
-  name: 'verifyDrugGemini',
-  input: {schema: VerifyDrugInputSchema},
-  output: {schema: VerifyDrugOutputSchema},
-  model: 'googleai/gemini-1.5-pro-latest',
-  prompt: basePrompt,
+Synthesize all this information into a final verdict.`,
 });
 
-const openAiPrompt = ai.definePrompt({
-  name: 'verifyDrugOpenAI',
-  input: {schema: VerifyDrugInputSchema},
-  output: {schema: VerifyDrugOutputSchema},
-  model: 'openai/gpt-4o-mini',
-  prompt: basePrompt,
-});
 
 const verifyDrugFlow = ai.defineFlow(
   {
@@ -69,29 +58,16 @@ const verifyDrugFlow = ai.defineFlow(
     outputSchema: VerifyDrugOutputSchema,
   },
   async ({ query }) => {
-    // Chain of responsibility: Try Gemini -> OpenAI
-    
-    // 1. Try Gemini
     try {
       const {output} = await geminiPrompt({ query });
-      if (output && output.drugName && output.drugName.toLowerCase() !== 'not identified') {
+      if (output) {
         return { ...output, sourceModel: 'Gemini 1.5 Pro' };
       }
     } catch (e) {
-      console.error("Gemini verification failed, trying next model.", e);
+      console.error("Gemini verification failed.", e);
     }
     
-    // 2. Try OpenAI as the final fallback
-    try {
-      const {output} = await openAiPrompt({ query });
-      if (output) {
-         return { ...output, sourceModel: 'OpenAI GPT-4o Mini' };
-      }
-    } catch(e) {
-         console.error("OpenAI verification failed.", e);
-    }
-
-    // If all models fail, return a generic error.
-    throw new Error('All AI models failed to process the request. Please try again later.');
+    // If the model fails, return a generic error.
+    throw new Error('The AI model failed to process the request. Please try again later.');
   }
 );

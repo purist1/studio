@@ -32,7 +32,6 @@ export async function chatWithAi(input: ChatWithAiInput): Promise<ChatWithAiOutp
 
 const chatPrompt = ai.definePrompt({
   name: 'chatWithAiPrompt',
-  model: 'openai/gpt-4o-mini',
   input: {schema: ChatWithAiInputSchema},
   output: {schema: ChatWithAiOutputSchema},
   prompt: `You are a helpful AI assistant for CUSTECH DrugVerify. Your role is to answer general questions about drug verification, counterfeit drugs, and pharmaceutical safety. Be helpful, concise, and professional. Do not attempt to verify specific drug codes yourself; guide the user to the "Verify Drug" feature for that purpose.
