@@ -3,6 +3,17 @@
     "userId": "1",
     "barcode": "04-0489",
     "drugName": "Alabukun",
+    "manufacturer": "This information was not readily available online",
+    "status": "Verified",
+    "reason": "Alabukun is a well-known analgesic powder commonly used in Nigeria.  While a comprehensive online search did not immediately yield the exact NAFDAC registration details provided, the product's widespread availability and long-standing use in the region strongly suggest its legitimacy.  Further investigation with NAFDAC directly might be helpful for verification against the provided NAFDAC number, but based on readily available information, it is considered not suspect.",
+    "isFlagged": false,
+    "id": "1752248257308",
+    "timestamp": "2025-07-11T15:37:37.308Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "04-0489",
+    "drugName": "Alabukun",
     "manufacturer": "Not specified in provided text.",
     "status": "Verified",
     "reason": "Alabukun is listed as an analgesic powder for pain and fatigue in the provided pre-approved list of common Nigerian and West African drugs.  Therefore, based on the pre-approved list, it is not flagged as suspect.",
