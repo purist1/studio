@@ -29,7 +29,7 @@ export default function ScanPage() {
             </div>
             <CardTitle className="text-2xl pt-4">Drug Verification Center</CardTitle>
             <CardDescription>
-              Enter a drug's barcode or NDC number below to verify its authenticity using our AI-powered system.
+              Enter a drug's barcode or NDC number to verify its authenticity. Both dashed (e.g., 0093-8547-52) and non-dashed (e.g., 0093854752) formats are accepted.
             </CardDescription>
           </CardHeader>
           
