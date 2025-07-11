@@ -62,11 +62,19 @@ const verifyDrugFlow = ai.defineFlow(
       if (output) {
         return { ...output, sourceModel: 'Gemini 1.5 Pro' };
       }
+      // This path is taken if the model returns a valid response, but the output is empty.
+      throw new Error("The AI model returned an empty response.");
     } catch (e) {
-      console.error("Gemini verification failed.", e);
+      console.error("AI verification failed.", e);
+       // Handle the failure gracefully by returning a specific "Unknown" status.
+      return {
+        isSuspect: true, // Treat failures as suspect for safety.
+        reason: "The AI model failed to process the request or returned an invalid response. Please try again or check the system status. This attempt has been logged.",
+        drugName: "N/A",
+        manufacturer: "N/A",
+        approvalInfo: "N/A",
+        sourceModel: "Error Handler"
+      };
     }
-
-    // If the model fails, return a generic error.
-    throw new Error('The AI model failed to process the request. Please try again later.');
   }
 );

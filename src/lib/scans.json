@@ -7,6 +7,28 @@
     "status": "Unknown",
     "reason": "AI analysis failed.",
     "isFlagged": true,
+    "id": "1752245182458",
+    "timestamp": "2025-07-11T14:46:22.458Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
+    "status": "Unknown",
+    "reason": "AI analysis failed.",
+    "isFlagged": true,
+    "id": "1752245172043",
+    "timestamp": "2025-07-11T14:46:12.043Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
+    "status": "Unknown",
+    "reason": "AI analysis failed.",
+    "isFlagged": true,
     "id": "1752244876736",
     "timestamp": "2025-07-11T14:41:16.736Z"
   },
