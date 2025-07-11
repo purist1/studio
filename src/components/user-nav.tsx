@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CircleUser, Home, LogOut, Search, MessageSquare, History } from 'lucide-react';
@@ -14,14 +15,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { User } from '@/lib/types';
 
 export function UserNav() {
   const router = useRouter();
+  const [user, setUser] = useState<{ fullname: string; email: string } | null>(null);
+
+  useEffect(() => {
+    // This code runs only on the client, after hydration
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const handleLogout = () => {
-    // Mock logout logic
+    // Clear session storage on logout
+    sessionStorage.removeItem('user');
     router.push('/');
   };
+
+  const displayName = user?.fullname || 'CUSTECH Staff';
+  const displayEmail = user?.email || 'staff@custech.edu.ng';
 
   return (
     <DropdownMenu>
@@ -38,9 +53,9 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">CUSTECH Staff</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              staff@custech.edu.ng
+              {displayEmail}
             </p>
           </div>
         </DropdownMenuLabel>

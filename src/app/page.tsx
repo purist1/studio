@@ -41,6 +41,9 @@ export default function LoginPage() {
     try {
       const user = await loginUser(values.email, values.password);
       if (user) {
+        // Store user data in session storage
+        sessionStorage.setItem('user', JSON.stringify({ fullname: user.fullname, email: user.email }));
+        
         toast({
           title: 'Login Successful',
           description: `Welcome back, ${user.fullname}!`,
