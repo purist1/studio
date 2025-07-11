@@ -44,13 +44,13 @@ const verificationPrompt = ai.definePrompt({
 
   1.  **Analyze the Query**: Identify the key components from the user's input: Drug Name, NAFDAC Number, NDC, or GTIN.
   2.  **Consult Internal Knowledge (Crucial Rule)**: You have a private, pre-vetted list of common drugs (provided below). If the user-provided drug name is on this list, you MUST consider it legitimate and mark it as **not suspect**, unless your web search finds a major, verifiable red flag (like a widely publicized recall for a specific batch). **CRUCIAL: You must NEVER, under any circumstances, mention your "internal list" or "pre-approved list" in your response to the user.**
-  3.  **Formulate Web Search Strategy**: If the drug is not on your internal list or if you need to verify details, perform iterative web searches. Use precise queries like "[Drug Name] NAFDAC registration number", "NAFDAC Greenbook [Drug Name]", "NDC [NDC Number] drug details".
-  4.  **Prioritize and Vet Sources**: Prioritize authoritative sources. In order of importance:
-      - Official Regulatory Websites: NAFDAC’s site (nafdac.gov.ng), its Greenbook database for registered drugs, or the US FDA database.
-      - Reputable Pharmaceutical Databases and Academic Reports.
-      - Verified news articles from trusted outlets discussing drug registration or recalls.
-      - Filter out unverified blogs, forums, or social media posts unless they provide credible, verifiable references.
-  5.  **Cross-Verify Information**: Cross-check details across multiple reliable sources. If you find a NAFDAC number, see if the associated manufacturer and formulation match the drug in question. Note any discrepancies.
+  3.  **Formulate Web Search Strategy**: If the drug is not on your internal list or if you need to verify details, perform iterative, deep web searches. Use precise queries like "[Drug Name] NAFDAC registration number", "NAFDAC Greenbook [Drug Name]", "NDC [NDC Number] drug details".
+  4.  **Prioritize and Vet Sources**: You MUST prioritize authoritative sources. In order of importance, search these websites deeply and thoroughly:
+      - **Official Regulatory Websites**: NAFDAC Greenbook (nafdac.gov.ng/greenbook), FDA National Drug Code Directory (fda.gov), Drugs@FDA, FDA's Orange Book.
+      - **Reputable Pharmaceutical Databases**: Drugs.com, DailyMed (dailymed.nlm.nih.gov), GS1 Verified (gs1.org), ndclist.com, RxNorm (nlm.nih.gov), DrugBank Online (go.drugbank.com), MIMS Nigeria (mims.com/ng).
+      - **Professional Health Sources**: Medscape, PDR.net, ASHP.org, MedlinePlus.
+      - **Filter out unverified blogs, forums, or social media posts** unless they provide credible, verifiable references.
+  5.  **Cross-Verify Information**: Cross-check details across multiple reliable sources from the list above. If you find a NAFDAC number, see if the associated manufacturer and formulation match the drug in question. Note any discrepancies.
   6.  **Handle Gaps and Limitations**: If you cannot find a NAFDAC number or other key information after a thorough search, state that the information is not publicly available in the sources you consulted. Note the limitations of your search (e.g., "Alabukun is a Nigerian product not marketed in the U.S., so an NDC does not apply.").
   7.  **Form a Verdict**:
       - If the query does **not match any known drug** based on your knowledge and web search, you MUST flag it as **suspect**. The reason should state that it's not a recognized drug.
