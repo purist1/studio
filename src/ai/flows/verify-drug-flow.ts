@@ -23,7 +23,8 @@ const VerifyDrugOutputSchema = z.object({
   reason: z.string().describe('A detailed explanation for the verdict, including the drug\'s identity if found.'),
   drugName: z.string().optional().describe('The identified name of the drug.'),
   manufacturer: z.string().optional().describe('The identified manufacturer of the drug.'),
-  approvalInfo: z.string().optional().describe('Approval information, including dates and regulatory bodies (e.g., NAFDAC, FDA).')
+  approvalInfo: z.string().optional().describe('Approval information, including dates and regulatory bodies (e.g., NAFDAC, FDA).'),
+  openfdaData: z.custom<OpenFDAResult>().optional().describe('The raw data returned from the OpenFDA API call.')
 });
 export type VerifyDrugOutput = z.infer<typeof VerifyDrugOutputSchema>;
 
@@ -40,7 +41,8 @@ export async function verifyDrugWithAi(input: VerifyDrugInput): Promise<VerifyDr
 const verifyDrugPrompt = ai.definePrompt({
   name: 'verifyDrugPrompt',
   input: {schema: PromptInputSchema},
-  output: {schema: VerifyDrugOutputSchema},
+  // The prompt's output schema does not include the raw openfdaData, as the AI's job is to analyze, not return it.
+  output: {schema: VerifyDrugOutputSchema.omit({ openfdaData: true })},
   prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode/NDC and determine if it corresponds to a legitimate product.
 
 You have been given data from the official OpenFDA database. Use this as your primary source of truth.
@@ -82,6 +84,11 @@ const verifyDrugFlow = ai.defineFlow(
     if (!output) {
       throw new Error('The AI model could not process the request. Please try again.');
     }
-    return output;
+    
+    // 3. Return the AI's analysis *and* the raw OpenFDA data for transparency.
+    return {
+        ...output,
+        openfdaData: openfdaData || undefined,
+    };
   }
 );

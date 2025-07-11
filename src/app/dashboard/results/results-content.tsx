@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot } from 'lucide-react';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot, Database } from 'lucide-react';
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 
@@ -79,6 +79,40 @@ export function ResultsContent() {
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl"><Database className="h-5 w-5 text-primary"/>Data Source: OpenFDA</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   {analysis?.openfdaData ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Brand Name</p>
+                                <p className="font-semibold">{analysis.openfdaData.brand_name?.[0] || 'N/A'}</p>
+                            </div>
+                            <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
+                                <p className="font-semibold">{analysis.openfdaData.manufacturer_name?.[0] || 'N/A'}</p>
+                            </div>
+                            <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Generic Name</p>
+                                <p className="font-semibold">{analysis.openfdaData.generic_name?.[0] || 'N/A'}</p>
+                            </div>
+                             <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Product NDC</p>
+                                <p className="font-semibold">{analysis.openfdaData.product_ndc || 'N/A'}</p>
+                            </div>
+                        </div>
+                   ) : (
+                    <p className="text-muted-foreground text-center py-4">
+                        No official record found for this barcode in the OpenFDA database.
+                    </p>
+                   )}
+                </CardContent>
+            </Card>
+
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl"><Info className="h-5 w-5 text-primary"/>AI Analysis</CardTitle>
