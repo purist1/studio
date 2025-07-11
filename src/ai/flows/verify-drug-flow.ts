@@ -1,15 +1,17 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity.
+ * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity
+ * by checking against multiple AI models.
  *
  * - verifyDrugWithAi - An asynchronous function that takes a drug query and uses
- *   the Gemini AI model to get a verification.
+ *   a chain of AI models to get a verification.
  * - VerifyDrugInput - The input type for the verifyDrugWithAi function.
  * - VerifyDrugOutput - The output type for the verifyDrugWithAi function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {gpt4o} from 'genkitx-openai';
 
 const VerifyDrugInputSchema = z.object({
   query: z.string().describe('The barcode, NDC, or name of the drug to verify.'),
@@ -50,6 +52,23 @@ Your tasks:
 Synthesize all this information into a final verdict.`,
 });
 
+const openAIPrompt = ai.definePrompt({
+    name: 'verifyDrugOpenAI',
+    input: {schema: VerifyDrugInputSchema},
+    output: {schema: VerifyDrugOutputSchema},
+    model: gpt4o,
+    prompt: `You are a pharmaceutical verification specialist with a focus on global supply chains. Analyze the provided drug query and determine its legitimacy.
+
+- User Query: {{{query}}}
+
+Your tasks:
+1.  **Identify the Drug**: Identify the drug's name and manufacturer. If unknown, state it explicitly.
+2.  **Check for red flags**: Analyze the query for signs of it being counterfeit, recalled, or unapproved.
+3.  **Find Regulatory Data**: Mention approval information from NAFDAC or FDA.
+4.  **Verdict**: Conclude with 'isSuspect' and a clear reason. If you cannot find the drug, it is suspect.
+`,
+});
+
 
 const verifyDrugFlow = ai.defineFlow(
   {
@@ -58,16 +77,27 @@ const verifyDrugFlow = ai.defineFlow(
     outputSchema: VerifyDrugOutputSchema,
   },
   async ({ query }) => {
+    // Attempt 1: Use Gemini first.
     try {
       const {output} = await geminiPrompt({ query });
-      if (output) {
+      if (output && output.drugName) {
         return { ...output, sourceModel: 'Gemini 1.5 Pro' };
       }
     } catch (e) {
-      console.error("Gemini verification failed.", e);
+      console.error("Gemini verification failed, trying OpenAI.", e);
     }
     
-    // If the model fails, return a generic error.
-    throw new Error('The AI model failed to process the request. Please try again later.');
+    // Attempt 2: If Gemini fails or doesn't identify the drug, try OpenAI as a backup.
+    try {
+       const {output} = await openAIPrompt({ query });
+      if (output) {
+        return { ...output, sourceModel: 'OpenAI GPT-4o' };
+      }
+    } catch (e) {
+      console.error("OpenAI verification also failed.", e);
+    }
+
+    // If both models fail, return a generic error.
+    throw new Error('All AI models failed to process the request. Please try again later.');
   }
 );

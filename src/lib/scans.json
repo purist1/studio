@@ -1,5 +1,27 @@
 [
   {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
+    "status": "Unknown",
+    "reason": "AI analysis failed.",
+    "isFlagged": true,
+    "id": "1752244876736",
+    "timestamp": "2025-07-11T14:41:16.736Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
+    "status": "Unknown",
+    "reason": "AI analysis failed.",
+    "isFlagged": true,
+    "id": "1752244783600",
+    "timestamp": "2025-07-11T14:39:43.601Z"
+  },
+  {
     "barcode": "paracetamol",
     "drugName": "Paracetamol (Acetaminophen)",
     "manufacturer": "Multiple manufacturers",
