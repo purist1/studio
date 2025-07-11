@@ -37,7 +37,7 @@ const verificationPrompt = ai.definePrompt({
   name: 'verifyDrugPrompt',
   input: {schema: VerifyDrugInputSchema},
   output: {schema: VerifyDrugOutputSchema},
-  prompt: `You are a world-class expert in pharmaceutical drug verification, with a focus on drugs common in West Africa, particularly Nigeria. Your task is to analyze the provided drug information and determine if it corresponds to a legitimate product using your internal knowledge base and ability to search for information.
+  prompt: `You are a world-class expert in pharmaceutical drug verification, with a focus on drugs common in West Africa, particularly Nigeria. Your task is to analyze the provided drug information and determine if it corresponds to a legitimate product using your internal knowledge base and ability to search for information on the web.
 
   ## User-Provided Information:
   - Drug Name: {{{drugName}}}
@@ -45,7 +45,8 @@ const verificationPrompt = ai.definePrompt({
   {{#if gtin}}- GTIN Number (from barcode): {{{gtin}}}{{/if}}
   {{#if nafdacNumber}}- NAFDAC Number: {{{nafdacNumber}}}{{/if}}
 
-  ## Common Nigerian & West African Drugs (Pre-approved List):
+  ## Internal Knowledge Base (Common Nigerian & West African Drugs):
+  This is your internal list of pre-vetted drugs. You should treat these as legitimate.
   - Paracetamol: Analgesic and antipyretic for pain and fever.
   - Ibuprofen: Nonsteroidal anti-inflammatory drug (NSAID) for pain and inflammation.
   - Diclofenac: NSAID for menstrual and body pain.
@@ -98,15 +99,15 @@ const verificationPrompt = ai.definePrompt({
   - Alabukun: Analgesic powder for pain and fatigue.
 
   ## Your Task:
-  1.  **Check Pre-approved List**: If the user-provided drug name is on the pre-approved list above, you MUST consider it a legitimate drug and mark it as **not suspect**, unless there is a major, verifiable red flag like a widely publicized recall for a specific batch.
-  2.  **Identify the Drug**: If not on the list, use the provided information to identify the drug's common name and manufacturer.
-  3.  **Cross-reference and Verify**: Use your extensive knowledge to determine if there are any reasons to suspect this drug. Check for inconsistencies between the provided name and codes (NDC, GTIN, NAFDAC Number). Look for information on recalls, common counterfeiting reports, or if the query details do not correspond to any known drug.
-  4.  **Find Approval Information**: Search for and include approval information from major regulatory bodies like Nigeria's NAFDAC, the US FDA, or the European EMA. The NAFDAC number is a critical piece of information for this.
+  1.  **Check Internal Knowledge**: If the user-provided drug name is on your internal list, you MUST consider it a legitimate drug and mark it as **not suspect**, unless there is a major, verifiable red flag you find from a web search (like a widely publicized recall for a specific batch). **CRUCIAL: Do NOT mention your "internal list" or "pre-approved list" in your response to the user.**
+  2.  **Identify and Research**: If not on the list, use the provided information to identify the drug's common name and manufacturer. Search the public web for information.
+  3.  **Cross-reference and Verify**: Use your web search findings to determine if there are reasons to suspect this drug. Check for inconsistencies between the provided name and codes (NDC, GTIN, NAFDAC Number). Look for information on recalls, common counterfeiting reports, or if the query details do not correspond to any known drug found online.
+  4.  **Find Approval Information**: Search the web for approval information from major regulatory bodies like Nigeria's NAFDAC, the US FDA, or the European EMA. The NAFDAC number is a critical piece of information for this.
   5.  **Form a Verdict**:
-      - If the query does **not match any known drug** and is not on the pre-approved list, you MUST flag it as **suspect**. The reason should state that it's not a recognized drug.
-      - If the information is inconsistent (e.g., the NAFDAC number belongs to a different drug than the name provided), you MUST flag it as **suspect**.
-      - If the drug is identified and there are no red flags, or if it's on the pre-approved list, mark it as **not suspect**.
-  6.  **Provide a Reason**: Write a clear, concise explanation for your verdict. Be specific about your findings.
+      - If the query does **not match any known drug** based on your knowledge and web search, you MUST flag it as **suspect**. The reason should state that it's not a recognized drug.
+      - If the information is inconsistent (e.g., the NAFDAC number found online belongs to a different drug than the name provided), you MUST flag it as **suspect**.
+      - If the drug is identified (either from your internal list or web search) and there are no red flags, mark it as **not suspect**.
+  6.  **Provide a Reason**: Write a clear, concise explanation for your verdict. Be specific about your findings. Your response should sound like an expert conclusion, not like you are following a checklist.
 
   Synthesize all this information into a final verdict.
   `,

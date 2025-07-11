@@ -1,6 +1,28 @@
 [
   {
     "userId": "1",
+    "barcode": "04-0489",
+    "drugName": "Alabukun",
+    "manufacturer": "Not specified in provided text.",
+    "status": "Verified",
+    "reason": "Alabukun is listed as an analgesic powder for pain and fatigue in the provided pre-approved list of common Nigerian and West African drugs.  Therefore, based on the pre-approved list, it is not flagged as suspect.",
+    "isFlagged": false,
+    "id": "1752247995547",
+    "timestamp": "2025-07-11T15:33:15.547Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "07640128012276",
+    "drugName": "Avastin (Bevacizumab)",
+    "manufacturer": "Unknown",
+    "status": "Suspect",
+    "reason": "The provided GTIN number (07640128012276) does not correspond to any known legitimate pharmaceutical product, and 'avastin bevacizumab' while a known drug, requires further verification with a proper NAFDAC or other regulatory body registration number for confirmation in the West African context.  The drug is not on the pre-approved list, and the lack of identifying regulatory information flags it as suspect. ",
+    "isFlagged": true,
+    "id": "1752247937580",
+    "timestamp": "2025-07-11T15:32:17.580Z"
+  },
+  {
+    "userId": "1",
     "barcode": "07640128012276",
     "drugName": "Avastin (bevacizumab)",
     "manufacturer": "Genentech (Roche)",
