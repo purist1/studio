@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScanLine, CheckCircle2, AlertTriangle, HelpCircle } from 'lucide-react';
+import { ScanLine, CheckCircle2, AlertTriangle, HelpCircle, MessageSquare } from 'lucide-react';
 import { mockScans } from '@/lib/data';
 import type { Scan } from '@/lib/types';
 
@@ -29,12 +29,20 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">Welcome, CUSTECH Staff</h1>
           <p className="text-muted-foreground">Ready to verify some drugs? Let&apos;s get started.</p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/dashboard/scan">
-            <ScanLine className="mr-2 h-5 w-5" />
-            Scan New Drug
-          </Link>
-        </Button>
+        <div className="flex items-center gap-4">
+           <Button asChild size="lg" variant="outline">
+            <Link href="/dashboard/chat">
+              <MessageSquare className="mr-2 h-5 w-5" />
+              Ask AI Assistant
+            </Link>
+          </Button>
+          <Button asChild size="lg">
+            <Link href="/dashboard/scan">
+              <ScanLine className="mr-2 h-5 w-5" />
+              Verify Drug
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card>
