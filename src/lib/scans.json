@@ -4,6 +4,28 @@
     "barcode": "00312345678906",
     "drugName": "N/A",
     "manufacturer": "N/A",
+    "status": "Suspect",
+    "reason": "The AI model failed to process the request or returned an invalid response. Please try again or check the system status. This attempt has been logged.",
+    "isFlagged": true,
+    "id": "1752245410680",
+    "timestamp": "2025-07-11T14:50:10.680Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
+    "status": "Suspect",
+    "reason": "The AI model failed to process the request or returned an invalid response. Please try again or check the system status. This attempt has been logged.",
+    "isFlagged": true,
+    "id": "1752245270945",
+    "timestamp": "2025-07-11T14:47:50.945Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "00312345678906",
+    "drugName": "N/A",
+    "manufacturer": "N/A",
     "status": "Unknown",
     "reason": "AI analysis failed.",
     "isFlagged": true,
