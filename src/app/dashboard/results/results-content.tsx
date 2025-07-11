@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot, Database } from 'lucide-react';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot } from 'lucide-react';
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
@@ -15,7 +15,7 @@ import type { Scan, User } from '@/lib/types';
 export function ResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const barcode = searchParams.get('barcode');
+  const query = searchParams.get('query');
   const { toast } = useToast();
 
   const [analysis, setAnalysis] = useState<VerifyDrugOutput | null>(null);
@@ -30,28 +30,24 @@ export function ResultsContent() {
   }, []);
 
   useEffect(() => {
-    if (!barcode) {
+    if (!query) {
       router.replace('/dashboard/scan');
       return;
     }
     
-    // Ensure we have a user before proceeding
     if (!currentUser) {
-        // If the user is not loaded yet, we can wait.
-        // This effect will re-run when currentUser state changes.
         return;
     }
 
     const verifyDrug = async () => {
       setIsLoading(true);
       try {
-        const result = await verifyDrugWithAi({ barcode });
+        const result = await verifyDrugWithAi({ query });
         setAnalysis(result);
 
-        // Add the result to the scan history with the current user's ID
         const newScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
-            barcode: barcode,
+            barcode: query,
             drugName: result.drugName || null,
             manufacturer: result.manufacturer || null,
             status: result.isSuspect ? 'Suspect' : 'Verified',
@@ -68,10 +64,9 @@ export function ResultsContent() {
           description: 'Could not perform drug verification. The AI model may be temporarily unavailable.',
         });
         
-        // Even if AI fails, log the attempt with the user's ID
         const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
-            barcode: barcode,
+            barcode: query,
             drugName: 'N/A',
             manufacturer: 'N/A',
             status: 'Unknown',
@@ -87,7 +82,7 @@ export function ResultsContent() {
     };
 
     verifyDrug();
-  }, [barcode, router, toast, currentUser]);
+  }, [query, router, toast, currentUser]);
 
   if (isLoading) {
     return (
@@ -115,47 +110,13 @@ export function ResultsContent() {
                     <div>
                         <CardTitle className="text-3xl font-bold">{titleText}</CardTitle>
                         <CardDescription className="font-semibold">
-                            Barcode: {barcode}
+                            Searched for: {query}
                         </CardDescription>
                     </div>
                 </div>
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
-
-             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl"><Database className="h-5 w-5 text-primary"/>Data Source: OpenFDA</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                   {analysis?.openfdaData ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Brand Name</p>
-                                <p className="font-semibold">{analysis.openfdaData.brand_name?.[0] || 'N/A'}</p>
-                            </div>
-                            <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
-                                <p className="font-semibold">{analysis.openfdaData.manufacturer_name?.[0] || 'N/A'}</p>
-                            </div>
-                            <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Generic Name</p>
-                                <p className="font-semibold">{analysis.openfdaData.generic_name?.[0] || 'N/A'}</p>
-                            </div>
-                             <div className="rounded-md border p-3 bg-background/50">
-                                <p className="text-sm font-medium text-muted-foreground">Product NDC</p>
-                                <p className="font-semibold">{analysis.openfdaData.product_ndc || 'N/A'}</p>
-                            </div>
-                        </div>
-                   ) : (
-                    <p className="text-muted-foreground text-center py-4">
-                        No official record found for this barcode in the OpenFDA database.
-                    </p>
-                   )}
-                </CardContent>
-            </Card>
-
-
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl"><Info className="h-5 w-5 text-primary"/>AI Analysis</CardTitle>
@@ -185,7 +146,7 @@ export function ResultsContent() {
                     </>
                    ) : (
                     <p className="text-muted-foreground text-center py-8">
-                        The AI was unable to provide an analysis for this barcode. Please try again.
+                        The AI was unable to provide an analysis for this query. Please try again.
                     </p>
                    )}
                 </CardContent>

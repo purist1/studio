@@ -13,9 +13,9 @@ export default function ScanPage() {
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const barcode = formData.get('barcode') as string;
-    if (barcode) {
-      router.push(`/dashboard/results?barcode=${barcode}`);
+    const query = formData.get('query') as string;
+    if (query) {
+      router.push(`/dashboard/results?query=${encodeURIComponent(query)}`);
     }
   };
 
@@ -29,17 +29,17 @@ export default function ScanPage() {
             </div>
             <CardTitle className="text-2xl pt-4">Drug Verification Center</CardTitle>
             <CardDescription>
-              Enter a drug's barcode or NDC number to verify its authenticity. Both dashed (e.g., 0093-8547-52) and non-dashed (e.g., 0093854752) formats are accepted.
+              Enter a drug's name, barcode, or NDC number to verify its authenticity.
             </CardDescription>
           </CardHeader>
           
           <form onSubmit={handleManualSubmit}>
             <CardContent>
                 <div className="space-y-2 pt-4">
-                    <Label htmlFor="barcode-input" className="sr-only">
-                        Enter Barcode or NDC
+                    <Label htmlFor="query-input" className="sr-only">
+                        Enter Drug Name, Barcode, or NDC
                     </Label>
-                    <Input id="barcode-input" name="barcode" placeholder="e.g., 0093-8547-52" required className="text-center text-lg h-12"/>
+                    <Input id="query-input" name="query" placeholder="e.g., Amoxicillin or 0093-8547-52" required className="text-center text-lg h-12"/>
                 </div>
             </CardContent>
             <CardFooter>
