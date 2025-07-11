@@ -2,6 +2,17 @@
   {
     "userId": "1",
     "barcode": "07640128012276",
+    "drugName": "Avastin (bevacizumab)",
+    "manufacturer": "Genentech (Roche)",
+    "status": "Suspect",
+    "reason": "The provided NDC/Barcode \"07640128012276\" does not correspond to any known drug product containing bevacizumab, also known as Avastin.  This discrepancy between the reported drug name and the NDC raises serious concerns about the authenticity of the product.  Further investigation is required. No approval information could be found for this specific NDC.",
+    "isFlagged": true,
+    "id": "1752246953409",
+    "timestamp": "2025-07-11T15:15:53.409Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "07640128012276",
     "drugName": "avastin bevacizumab",
     "manufacturer": "Not Identified",
     "status": "Suspect",

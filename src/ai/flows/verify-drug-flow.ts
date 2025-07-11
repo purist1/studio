@@ -40,7 +40,8 @@ const verificationPrompt = ai.definePrompt({
 
   ## User-Provided Information:
   - Drug Name: {{{drugName}}}
-  - NDC / Barcode: {{{ndc}}}{{{gtin}}}
+  {{#if ndc}}- NDC Number: {{{ndc}}}{{/if}}
+  {{#if gtin}}- GTIN Number (from barcode): {{{gtin}}}{{/if}}
 
   ## Your Task:
   1.  **Identify the Drug**: Based on the provided information, identify the drug's common name and manufacturer.
