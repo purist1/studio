@@ -1,37 +1,37 @@
 'use server';
 /**
- * @fileOverview This file defines a Genkit flow for flagging potentially counterfeit drugs using general AI knowledge.
+ * @fileOverview This file defines a Genkit flow for verifying a drug's authenticity using only the AI's general knowledge.
  *
- * - flagSuspectDrug - An asynchronous function that takes a drug barcode and returns a verdict on whether the drug is suspect.
- * - FlagSuspectDrugInput - The input type for the flagSuspectDrug function.
- * - FlagSuspectDrugOutput - The output type for the flagSuspectDrug function.
+ * - verifyDrugWithAi - An asynchronous function that takes a drug barcode and returns a verdict on whether the drug is suspect.
+ * - VerifyDrugInput - The input type for the verifyDrugWithAi function.
+ * - VerifyDrugOutput - The output type for the verifyDrugWithAi function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const FlagSuspectDrugInputSchema = z.object({
+const VerifyDrugInputSchema = z.object({
   barcode: z.string().describe('The barcode or NDC of the drug to verify.'),
 });
-export type FlagSuspectDrugInput = z.infer<typeof FlagSuspectDrugInputSchema>;
+export type VerifyDrugInput = z.infer<typeof VerifyDrugInputSchema>;
 
-const FlagSuspectDrugOutputSchema = z.object({
+const VerifyDrugOutputSchema = z.object({
   isSuspect: z.boolean().describe('Whether the drug is suspected to be counterfeit, recalled, or otherwise problematic.'),
   reason: z.string().describe('A detailed explanation for the verdict, including the drug\'s identity if found.'),
   drugName: z.string().optional().describe('The identified name of the drug.'),
   manufacturer: z.string().optional().describe('The identified manufacturer of the drug.'),
   approvalInfo: z.string().optional().describe('Approval information, including dates and regulatory bodies (e.g., NAFDAC, FDA).')
 });
-export type FlagSuspectDrugOutput = z.infer<typeof FlagSuspectDrugOutputSchema>;
+export type VerifyDrugOutput = z.infer<typeof VerifyDrugOutputSchema>;
 
-export async function flagSuspectDrug(input: FlagSuspectDrugInput): Promise<FlagSuspectDrugOutput> {
-  return flagSuspectDrugFlow(input);
+export async function verifyDrugWithAi(input: VerifyDrugInput): Promise<VerifyDrugOutput> {
+  return verifyDrugFlow(input);
 }
 
-const flagSuspectDrugPrompt = ai.definePrompt({
-  name: 'flagSuspectDrugPrompt',
-  input: {schema: FlagSuspectDrugInputSchema},
-  output: {schema: FlagSuspectDrugOutputSchema},
+const verifyDrugPrompt = ai.definePrompt({
+  name: 'verifyDrugPrompt',
+  input: {schema: VerifyDrugInputSchema},
+  output: {schema: VerifyDrugOutputSchema},
   prompt: `You are a world-class expert in pharmaceutical drug verification. Your task is to analyze the provided drug barcode/NDC and determine if it corresponds to a legitimate product.
 
 Use your extensive knowledge base to:
@@ -43,19 +43,16 @@ Use your extensive knowledge base to:
 If you identify the drug, state its name and manufacturer clearly in your reason. If you cannot identify the drug, state that the code does not match any known products in your database and flag it as suspect.`,
 });
 
-const flagSuspectDrugFlow = ai.defineFlow(
+const verifyDrugFlow = ai.defineFlow(
   {
-    name: 'flagSuspectDrugFlow',
-    inputSchema: FlagSuspectDrugInputSchema,
-    outputSchema: FlagSuspectDrugOutputSchema,
+    name: 'verifyDrugFlow',
+    inputSchema: VerifyDrugInputSchema,
+    outputSchema: VerifyDrugOutputSchema,
   },
   async input => {
-    const {output} = await flagSuspectDrugPrompt(input);
+    const {output} = await verifyDrugPrompt(input);
     if (!output) {
-      return {
-        isSuspect: true,
-        reason: 'The AI model could not process the request. Please try again.',
-      };
+      throw new Error('The AI model could not process the request. Please try again.');
     }
     return output;
   }

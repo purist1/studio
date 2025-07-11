@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-import { chatWithAi } from '@/ai/flows/chat-with-ai-flow';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, FileCheck2, Bot } from 'lucide-react';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot } from 'lucide-react';
+import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
+import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 
 export function ResultsContent() {
   const router = useRouter();
@@ -17,7 +16,7 @@ export function ResultsContent() {
   const barcode = searchParams.get('barcode');
   const { toast } = useToast();
 
-  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<VerifyDrugOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,19 +28,16 @@ export function ResultsContent() {
     const verifyDrug = async () => {
       setIsLoading(true);
       try {
-        const result = await chatWithAi({ 
-            history: [], 
-            message: `Please verify the drug with barcode: ${barcode}. Provide a detailed analysis based on all available data sources.` 
-        });
-        setAnalysis(result.response);
+        const result = await verifyDrugWithAi({ barcode });
+        setAnalysis(result);
       } catch (error) {
         console.error('Verification failed:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not perform drug verification.',
+          description: 'Could not perform drug verification. The AI model may be temporarily unavailable.',
         });
-        setAnalysis("An unexpected error occurred during verification. Please try again or check the console for details.");
+        setAnalysis(null); 
       } finally {
         setIsLoading(false);
       }
@@ -50,8 +46,7 @@ export function ResultsContent() {
     verifyDrug();
   }, [barcode, router, toast]);
 
-
-  if (isLoading || !analysis) {
+  if (isLoading) {
     return (
         <div className="container py-8 max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
             <div className="text-center text-muted-foreground">
@@ -63,16 +58,20 @@ export function ResultsContent() {
     );
   }
 
+  const isSuspect = analysis?.isSuspect ?? true;
+  const cardColor = isSuspect ? 'border-red-500/50 bg-red-500/5' : 'border-green-500/50 bg-green-500/5';
+  const titleText = isSuspect ? 'Suspect Drug' : 'Verified Drug';
+
   return (
     <div className="container py-8 max-w-4xl mx-auto">
-      <Card className="shadow-lg">
+      <Card className={`shadow-lg transition-colors ${cardColor}`}>
         <CardHeader className="p-6 bg-muted/50">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Bot className="h-8 w-8 text-primary" />
+                    {isSuspect ? <AlertCircle className="h-8 w-8 text-red-500"/> : <Bot className="h-8 w-8 text-green-500" />}
                     <div>
-                        <CardTitle className="text-3xl font-bold">Verification Result</CardTitle>
-                        <CardDescription className="font-semibold text-primary">
+                        <CardTitle className="text-3xl font-bold">{titleText}</CardTitle>
+                        <CardDescription className="font-semibold">
                             Barcode: {barcode}
                         </CardDescription>
                     </div>
@@ -80,12 +79,38 @@ export function ResultsContent() {
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
-            <Card className="bg-background">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl"><AlertCircle className="h-5 w-5 text-accent"/>AI Analysis</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-xl"><Info className="h-5 w-5 text-primary"/>AI Analysis</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{analysis}</p>
+                <CardContent className="space-y-4">
+                   {analysis ? (
+                    <>
+                        <div className="space-y-1">
+                            <h4 className="font-semibold">Reasoning:</h4>
+                            <p className="text-muted-foreground whitespace-pre-wrap">{analysis.reason}</p>
+                        </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                            <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Drug Name</p>
+                                <p className="font-semibold text-lg">{analysis.drugName || 'Not Identified'}</p>
+                            </div>
+                             <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Manufacturer</p>
+                                <p className="font-semibold text-lg">{analysis.manufacturer || 'Not Identified'}</p>
+                            </div>
+                              <div className="rounded-md border p-3 bg-background/50">
+                                <p className="text-sm font-medium text-muted-foreground">Approval Info</p>
+                                <p className="font-semibold text-lg">{analysis.approvalInfo || 'Not Available'}</p>
+                            </div>
+                        </div>
+                    </>
+                   ) : (
+                    <p className="text-muted-foreground text-center py-8">
+                        The AI was unable to provide an analysis for this barcode. Please try again.
+                    </p>
+                   )}
                 </CardContent>
             </Card>
         </CardContent>
