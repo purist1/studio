@@ -3,6 +3,17 @@
     "userId": "1",
     "barcode": "07640128012276",
     "drugName": "Avastin (bevacizumab)",
+    "manufacturer": "Genentech (Roche)",
+    "status": "Suspect",
+    "reason": "The provided GTIN (07640128012276) does not correspond to any known drug product, and 'avastin bevacizumab', while a known cancer medication, is not on the pre-approved list of common Nigerian and West African drugs.  There is no verifiable information linking this GTIN to a legitimate bevacizumab product. Therefore, it is flagged as suspect.",
+    "isFlagged": true,
+    "id": "1752247738117",
+    "timestamp": "2025-07-11T15:28:58.117Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "07640128012276",
+    "drugName": "Avastin (bevacizumab)",
     "manufacturer": "Genentech/Roche",
     "status": "Suspect",
     "reason": "The provided GTIN number 07640128012276 does not correspond to any known drug product containing bevacizumab, the active ingredient in Avastin.  A thorough search across multiple global databases of pharmaceutical products did not return a match for this GTIN with the drug name.  Therefore, the drug is flagged as suspect.",

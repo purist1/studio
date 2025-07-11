@@ -19,6 +19,7 @@ export function ResultsContent() {
   const drugName = searchParams.get('drugName');
   const ndc = searchParams.get('ndc');
   const gtin = searchParams.get('gtin');
+  const nafdacNumber = searchParams.get('nafdacNumber');
 
   const { toast } = useToast();
 
@@ -40,14 +41,19 @@ export function ResultsContent() {
         return;
     }
 
-    if (!drugName && !ndc && !gtin) {
+    if (!drugName && !ndc && !gtin && !nafdacNumber) {
       router.replace('/dashboard/scan');
       return;
     }
 
     const runVerification = async () => {
       setIsLoading(true);
-      const input = { drugName: drugName ?? undefined, ndc: ndc ?? undefined, gtin: gtin ?? undefined };
+      const input = { 
+        drugName: drugName ?? undefined, 
+        ndc: ndc ?? undefined, 
+        gtin: gtin ?? undefined,
+        nafdacNumber: nafdacNumber ?? undefined
+      };
       
       let result: VerifyDrugOutput | null = null;
       try {
@@ -63,7 +69,7 @@ export function ResultsContent() {
       } finally {
          const newScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
-            barcode: ndc || gtin || 'N/A',
+            barcode: ndc || gtin || nafdacNumber || 'N/A',
             drugName: result?.drugName || drugName || 'N/A',
             manufacturer: result?.manufacturer || 'N/A',
             status: result ? (result.isSuspect ? 'Suspect' : 'Verified') : 'Unknown',
@@ -76,7 +82,7 @@ export function ResultsContent() {
     };
 
     runVerification();
-  }, [drugName, ndc, gtin, currentUser, router, toast]);
+  }, [drugName, ndc, gtin, nafdacNumber, currentUser, router, toast]);
 
   if (isLoading) {
     return (

@@ -16,6 +16,7 @@ const VerifyDrugInputSchema = z.object({
   drugName: z.string().optional().describe("The name of the drug as it appears on the packaging."),
   ndc: z.string().optional().describe("The National Drug Code (NDC) found on the packaging."),
   gtin: z.string().optional().describe("The Global Trade Item Number (GTIN) from the barcode."),
+  nafdacNumber: z.string().optional().describe("The NAFDAC registration number found on the packaging."),
 });
 export type VerifyDrugInput = z.infer<typeof VerifyDrugInputSchema>;
 
@@ -42,6 +43,7 @@ const verificationPrompt = ai.definePrompt({
   - Drug Name: {{{drugName}}}
   {{#if ndc}}- NDC Number: {{{ndc}}}{{/if}}
   {{#if gtin}}- GTIN Number (from barcode): {{{gtin}}}{{/if}}
+  {{#if nafdacNumber}}- NAFDAC Number: {{{nafdacNumber}}}{{/if}}
 
   ## Common Nigerian & West African Drugs (Pre-approved List):
   - Paracetamol: Analgesic and antipyretic for pain and fever.
@@ -98,11 +100,11 @@ const verificationPrompt = ai.definePrompt({
   ## Your Task:
   1.  **Check Pre-approved List**: If the user-provided drug name is on the pre-approved list above, you MUST consider it a legitimate drug and mark it as **not suspect**, unless there is a major, verifiable red flag like a widely publicized recall for a specific batch.
   2.  **Identify the Drug**: If not on the list, use the provided information to identify the drug's common name and manufacturer.
-  3.  **Cross-reference and Verify**: Use your extensive knowledge to determine if there are any reasons to suspect this drug. Check for inconsistencies between the provided name and codes. Look for information on recalls, common counterfeiting reports, or if the query details do not correspond to any known drug.
-  4.  **Find Approval Information**: Search for and include approval information from major regulatory bodies like Nigeria's NAFDAC, the US FDA, or the European EMA.
+  3.  **Cross-reference and Verify**: Use your extensive knowledge to determine if there are any reasons to suspect this drug. Check for inconsistencies between the provided name and codes (NDC, GTIN, NAFDAC Number). Look for information on recalls, common counterfeiting reports, or if the query details do not correspond to any known drug.
+  4.  **Find Approval Information**: Search for and include approval information from major regulatory bodies like Nigeria's NAFDAC, the US FDA, or the European EMA. The NAFDAC number is a critical piece of information for this.
   5.  **Form a Verdict**:
       - If the query does **not match any known drug** and is not on the pre-approved list, you MUST flag it as **suspect**. The reason should state that it's not a recognized drug.
-      - If the information is inconsistent (e.g., the NDC belongs to a different drug than the name provided), you MUST flag it as **suspect**.
+      - If the information is inconsistent (e.g., the NAFDAC number belongs to a different drug than the name provided), you MUST flag it as **suspect**.
       - If the drug is identified and there are no red flags, or if it's on the pre-approved list, mark it as **not suspect**.
   6.  **Provide a Reason**: Write a clear, concise explanation for your verdict. Be specific about your findings.
 

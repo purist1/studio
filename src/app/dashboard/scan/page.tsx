@@ -16,8 +16,9 @@ export default function ScanPage() {
     const drugName = formData.get('drugName') as string;
     const ndc = formData.get('ndc') as string;
     const gtin = formData.get('gtin') as string;
+    const nafdacNumber = formData.get('nafdacNumber') as string;
     
-    if (!drugName && !ndc && !gtin) {
+    if (!drugName && !ndc && !gtin && !nafdacNumber) {
         // Simple validation: at least one field must be filled
         alert("Please fill in at least one field.");
         return;
@@ -27,6 +28,7 @@ export default function ScanPage() {
     if (drugName) params.set('drugName', drugName);
     if (ndc) params.set('ndc', ndc);
     if (gtin) params.set('gtin', gtin);
+    if (nafdacNumber) params.set('nafdacNumber', nafdacNumber);
     
     router.push(`/dashboard/results?${params.toString()}`);
   };
@@ -50,6 +52,10 @@ export default function ScanPage() {
                 <div className="space-y-2">
                     <Label htmlFor="drugName-input">Drug Name (as seen on the carton)</Label>
                     <Input id="drugName-input" name="drugName" placeholder="e.g., Amoxicillin 500mg" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="nafdac-input">NAFDAC Registration Number</Label>
+                    <Input id="nafdac-input" name="nafdacNumber" placeholder="e.g., A4-1234" />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="ndc-input">NDC Number (National Drug Code)</Label>
