@@ -6,5 +6,5 @@ export const ai = genkit({
     googleAI(),
   ],
   logLevel: 'debug',
-  model: 'googleai/gemini-1.5-pro-latest',
+  model: 'googleai/gemini-1.5-flash-latest',
 });

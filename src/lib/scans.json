@@ -1,6 +1,17 @@
 [
   {
     "userId": "1",
+    "barcode": "N/A",
+    "drugName": "Amoxicillin",
+    "manufacturer": null,
+    "status": "Suspect",
+    "reason": "No barcode (NDC or GTIN) was provided for database lookup. Verification is not possible without a unique identifier.",
+    "isFlagged": true,
+    "id": "1752246048861",
+    "timestamp": "2025-07-11T15:00:48.861Z"
+  },
+  {
+    "userId": "1",
     "barcode": "00312345678906",
     "drugName": "N/A",
     "manufacturer": "N/A",
