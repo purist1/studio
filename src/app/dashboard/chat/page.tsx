@@ -57,7 +57,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="container py-8 h-[calc(100vh-150px)] flex flex-col">
+    <div className="container py-8 h-full flex flex-col">
       <Card className="flex-1 flex flex-col shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
