@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit } from 'lucide-react';
+import { FlaskConical, ScanLine, AlertCircle, Info, Bot, BrainCircuit, CheckCircle } from 'lucide-react';
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
@@ -23,19 +24,26 @@ export function ResultsContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // This code runs on the client after hydration to get the user from session storage.
     const userStr = sessionStorage.getItem('user');
     if (userStr) {
         setCurrentUser(JSON.parse(userStr));
+    } else {
+        // If no user, we can't proceed. Redirect to login.
+        router.replace('/');
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
+    // This effect runs when the 'currentUser' or 'query' changes.
+    // It ensures we only run verification after we have the user data.
     if (!query) {
       router.replace('/dashboard/scan');
       return;
     }
     
     if (!currentUser) {
+        // currentUser is not yet loaded, wait for the first effect to set it.
         return;
     }
 
@@ -64,6 +72,7 @@ export function ResultsContent() {
           description: 'Could not perform drug verification. The AI models may be temporarily unavailable.',
         });
         
+        // Even on failure, we log the attempt.
         const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
             userId: currentUser.id,
             barcode: query,
@@ -82,7 +91,7 @@ export function ResultsContent() {
     };
 
     verifyDrug();
-  }, [query, router, toast, currentUser]);
+  }, [query, currentUser, router, toast]);
 
   if (isLoading) {
     return (
@@ -96,9 +105,10 @@ export function ResultsContent() {
     );
   }
 
-  const isSuspect = analysis?.isSuspect ?? true;
+  const isSuspect = analysis?.isSuspect ?? true; // Default to suspect if analysis is null
   const cardColor = isSuspect ? 'border-red-500/50 bg-red-500/5' : 'border-green-500/50 bg-green-500/5';
   const titleText = isSuspect ? 'Suspect Drug' : 'Verified Drug';
+  const TitleIcon = isSuspect ? AlertCircle : CheckCircle;
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
@@ -106,7 +116,7 @@ export function ResultsContent() {
         <CardHeader className="p-6 bg-muted/50">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    {isSuspect ? <AlertCircle className="h-8 w-8 text-red-500"/> : <Bot className="h-8 w-8 text-green-500" />}
+                    <TitleIcon className={`h-8 w-8 ${isSuspect ? 'text-red-500' : 'text-green-500'}`}/>
                     <div>
                         <CardTitle className="text-3xl font-bold">{titleText}</CardTitle>
                         <CardDescription className="font-semibold">
@@ -126,7 +136,7 @@ export function ResultsContent() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-xl"><Info className="h-5 w-5 text-primary"/>AI Analysis</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-4">
                    {analysis ? (
                     <>
                         <div className="space-y-1">
@@ -151,7 +161,7 @@ export function ResultsContent() {
                     </>
                    ) : (
                     <p className="text-muted-foreground text-center py-8">
-                        The AI was unable to provide an analysis for this query. Please try again.
+                        The AI was unable to provide an analysis for this query. This could be due to a network error or an issue with the AI providers. The attempt has been logged in your history.
                     </p>
                    )}
                 </CardContent>
