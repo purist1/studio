@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "userId": "1",
+    "barcode": "1234512301",
+    "drugName": "Unknown",
+    "manufacturer": "Unknown",
+    "status": "Suspect",
+    "reason": "The provided barcode/NDC (1234512301) was not found in the OpenFDA database. This absence from the official FDA database raises suspicion about the legitimacy of the product.",
+    "isFlagged": true,
+    "id": "1752234119193",
+    "timestamp": "2025-07-11T11:41:59.193Z"
+  },
+  {
+    "userId": "1",
+    "barcode": "1234512301",
+    "drugName": "Not found",
+    "manufacturer": "Not found",
+    "status": "Suspect",
+    "reason": "The provided barcode/NDC (1234512301) was not found in the OpenFDA database. This absence from the official FDA database raises suspicion about the legitimacy of the product.",
+    "isFlagged": true,
+    "id": "1752234118860",
+    "timestamp": "2025-07-11T11:41:58.860Z"
+  }
+]

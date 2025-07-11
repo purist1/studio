@@ -9,3 +9,10 @@ export interface Scan {
   isFlagged: boolean;
   reason?: string;
 }
+
+export interface User {
+  id: string;
+  fullname: string;
+  email: string;
+  password?: string; // Should be hashed in a real app
+}
