@@ -73,8 +73,13 @@ const chatWithAiFlow = ai.defineFlow(
     outputSchema: ChatWithAiOutputSchema,
   },
   async (input) => {
-    const llmResponse = await chatPrompt(input);
-    const response = llmResponse.output?.response || "Sorry, I couldn't process that request.";
-    return { response };
+    try {
+      const llmResponse = await chatPrompt(input);
+      const response = llmResponse.output?.response || "Sorry, I couldn't process that request.";
+      return { response };
+    } catch (error) {
+       console.error("AI Flow Error:", error);
+       return { response: "An error occurred while communicating with the AI. Please try again." };
+    }
   }
 );
