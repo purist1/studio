@@ -18,27 +18,34 @@ export interface OpenFDAResult {
  * @returns The first matching result from the API, or null if not found or an error occurs.
  */
 export async function searchOpenFDA(barcode: string): Promise<OpenFDAResult | null> {
-  // The API is particular about searching fields with special characters.
-  // Using `openfda.product_ndc` is necessary for an exact match on the dashed NDC format.
-  const searchField = "openfda.product_ndc";
-  const url = `https://api.fda.gov/drug/ndc.json?search=${searchField}:"${barcode}"&limit=1`;
+  // To handle both dashed and non-dashed NDCs, we try searching on two different fields.
+  // 1. `product_ndc`: For non-dashed NDCs.
+  // 2. `openfda.product_ndc`: For an exact match on dashed NDCs.
+  const searchFields = ['product_ndc', 'openfda.product_ndc.exact'];
+  
+  for (const field of searchFields) {
+    const url = `https://api.fda.gov/drug/ndc.json?search=${field}:"${barcode}"&limit=1`;
 
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`OpenFDA API request failed with status: ${response.status}`);
-      return null;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        // Don't log an error here, as a 404 is expected if not found on the first field.
+        continue;
+      }
+
+      const data = await response.json();
+
+      if (data.results && data.results.length > 0) {
+        // Found a result, return it immediately.
+        return data.results[0] as OpenFDAResult;
+      }
+    } catch (error) {
+      console.error(`An error occurred while fetching data from OpenFDA using field ${field}:`, error);
+      // Don't stop, try the next field.
     }
-
-    const data = await response.json();
-
-    if (data.results && data.results.length > 0) {
-      return data.results[0] as OpenFDAResult;
-    }
-
-    return null; // No results found
-  } catch (error) {
-    console.error("An error occurred while fetching data from OpenFDA:", error);
-    return null;
   }
+
+  // If the loop completes without returning, no results were found on any field.
+  console.log(`No OpenFDA result found for barcode: ${barcode}`);
+  return null;
 }

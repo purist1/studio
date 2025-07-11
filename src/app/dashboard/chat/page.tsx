@@ -73,7 +73,7 @@ export default function ChatPage() {
                 {messages.length === 0 && (
                     <div className="text-center text-muted-foreground pt-16">
                         <p className="mb-2">No messages yet. Start the conversation!</p>
-                        <p className="text-sm">e.g., "Check barcode 0093-8547-52" or "What are common signs of fake drugs?"</p>
+                        <p className="text-sm">e.g., "What are common signs of fake drugs?"</p>
                     </div>
                 )}
               {messages.map((message, index) => (
@@ -123,7 +123,7 @@ export default function ChatPage() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message or a barcode..."
+              placeholder="Type your message..."
               className="flex-1"
               disabled={isLoading}
             />

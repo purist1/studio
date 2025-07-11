@@ -4,7 +4,7 @@
  *
  * - chatWithAi - An asynchronous function that takes a user's message and the chat history.
  * - ChatWithAiInput - The input type for the chatWithAi function.
- * - ChatWithAiOutput - The output type for the chatWithAi function.
+ * - ChatWithAiOutput - The return type for the chatWithAi function.
  */
 
 import {ai} from '@/ai/genkit';
