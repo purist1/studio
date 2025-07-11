@@ -8,13 +8,21 @@ import type { Scan } from '@/lib/types';
 const dbPath = path.join(process.cwd(), 'src', 'lib', 'scans.json');
 
 /**
- * Reads all scans from the JSON file database.
+ * Reads scans from the JSON file database.
+ * If a userId is provided, it filters scans for that user.
+ * @param userId The optional ID of the user to filter scans for.
  * @returns A promise that resolves to an array of Scan objects.
  */
-export async function getScanHistory(): Promise<Scan[]> {
+export async function getScanHistory(userId?: string): Promise<Scan[]> {
   try {
     const data = await fs.readFile(dbPath, 'utf-8');
-    const scans: Scan[] = JSON.parse(data);
+    let scans: Scan[] = JSON.parse(data);
+
+    // If a userId is provided, filter the scans
+    if (userId) {
+      scans = scans.filter(scan => scan.userId === userId);
+    }
+    
     // Sort scans by timestamp in descending order (most recent first)
     scans.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return scans;
@@ -35,7 +43,8 @@ export async function getScanHistory(): Promise<Scan[]> {
  */
 export async function addScanToHistory(newScan: Omit<Scan, 'id' | 'timestamp'>): Promise<void> {
   try {
-    const scans = await getScanHistory();
+    // We pass undefined to get all scans, since we're just adding a new one.
+    const allScans = await getScanHistory(undefined);
     
     const scanWithMetadata: Scan = {
       ...newScan,
@@ -44,9 +53,9 @@ export async function addScanToHistory(newScan: Omit<Scan, 'id' | 'timestamp'>):
     };
 
     // Add the new scan to the beginning of the array
-    scans.unshift(scanWithMetadata);
+    allScans.unshift(scanWithMetadata);
 
-    await fs.writeFile(dbPath, JSON.stringify(scans, null, 2), 'utf-8');
+    await fs.writeFile(dbPath, JSON.stringify(allScans, null, 2), 'utf-8');
   } catch (error) {
     console.error('Failed to add scan to history:', error);
     throw new Error('Could not save scan to history.');

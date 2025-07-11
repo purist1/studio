@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ScanLine, CheckCircle2, AlertTriangle, HelpCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { getScanHistory } from '@/services/scan-history';
-import type { Scan } from '@/lib/types';
+import type { Scan, User } from '@/lib/types';
 import { format } from 'date-fns';
 
 const statusIcons: { [key in Scan['status']]: React.ReactNode } = {
@@ -27,12 +27,24 @@ export default function DashboardPage() {
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [totalScans, setTotalScans] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // This code runs only on the client, after hydration
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const history = await getScanHistory();
+        // Fetch history for the current user
+        const history = await getScanHistory(currentUser.id);
         setRecentScans(history.slice(0, 3));
         setTotalScans(history.length);
       } catch (error) {
@@ -44,13 +56,13 @@ export default function DashboardPage() {
       }
     };
     fetchHistory();
-  }, []);
+  }, [currentUser]);
 
   return (
     <div className="container py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome, CUSTECH Staff</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Welcome, {currentUser?.fullname || 'CUSTECH Staff'}</h1>
           <p className="text-muted-foreground">Ready to verify some drugs? Let&apos;s get started.</p>
         </div>
         <div className="flex items-center gap-4">

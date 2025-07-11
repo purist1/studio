@@ -10,7 +10,7 @@ import { FlaskConical, ScanLine, AlertCircle, Info, Bot, Database } from 'lucide
 import type { VerifyDrugOutput } from '@/ai/flows/verify-drug-flow';
 import { verifyDrugWithAi } from '@/ai/flows/verify-drug-flow';
 import { addScanToHistory } from '@/services/scan-history';
-import type { Scan } from '@/lib/types';
+import type { Scan, User } from '@/lib/types';
 
 export function ResultsContent() {
   const router = useRouter();
@@ -20,11 +20,26 @@ export function ResultsContent() {
 
   const [analysis, setAnalysis] = useState<VerifyDrugOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+        setCurrentUser(JSON.parse(userStr));
+    }
+  }, []);
 
   useEffect(() => {
     if (!barcode) {
       router.replace('/dashboard/scan');
       return;
+    }
+    
+    // Ensure we have a user before proceeding
+    if (!currentUser) {
+        // If the user is not loaded yet, we can wait.
+        // This effect will re-run when currentUser state changes.
+        return;
     }
 
     const verifyDrug = async () => {
@@ -33,9 +48,9 @@ export function ResultsContent() {
         const result = await verifyDrugWithAi({ barcode });
         setAnalysis(result);
 
-        // Add the result to the scan history
+        // Add the result to the scan history with the current user's ID
         const newScan: Omit<Scan, 'id' | 'timestamp'> = {
-            userId: '1', // Mock user ID
+            userId: currentUser.id,
             barcode: barcode,
             drugName: result.drugName || null,
             manufacturer: result.manufacturer || null,
@@ -53,9 +68,9 @@ export function ResultsContent() {
           description: 'Could not perform drug verification. The AI model may be temporarily unavailable.',
         });
         
-        // Even if AI fails, log the attempt
+        // Even if AI fails, log the attempt with the user's ID
         const failedScan: Omit<Scan, 'id' | 'timestamp'> = {
-            userId: '1',
+            userId: currentUser.id,
             barcode: barcode,
             drugName: 'N/A',
             manufacturer: 'N/A',
@@ -72,7 +87,7 @@ export function ResultsContent() {
     };
 
     verifyDrug();
-  }, [barcode, router, toast]);
+  }, [barcode, router, toast, currentUser]);
 
   if (isLoading) {
     return (

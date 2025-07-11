@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import type { Scan } from '@/lib/types';
+import type { Scan, User } from '@/lib/types';
 import { getScanHistory } from '@/services/scan-history';
 import { ListFilter, Search, FileDown, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -34,13 +34,25 @@ export default function HistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilters, setStatusFilters] = useState<Set<Scan['status']>>(new Set());
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
+    const userStr = sessionStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    } else {
+      // Handle case where user is not logged in, maybe redirect or show message
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const history = await getScanHistory();
-        // The scans are stored with the latest first, so we reverse for chronological display if needed, but for history latest on top is fine.
+        const history = await getScanHistory(currentUser.id);
         setScans(history);
       } catch (error) {
         console.error('Failed to fetch scan history:', error);
@@ -50,7 +62,7 @@ export default function HistoryPage() {
       }
     };
     fetchHistory();
-  }, []);
+  }, [currentUser]);
 
   const filteredScans = useMemo(() => {
     return scans
@@ -95,7 +107,7 @@ export default function HistoryPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Scan History</h1>
         <p className="text-muted-foreground">
-          A log of all drugs verified through the app.
+          A log of all drugs you have verified through the app.
         </p>
       </div>
 

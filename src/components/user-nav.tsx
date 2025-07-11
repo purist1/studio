@@ -19,7 +19,7 @@ import type { User } from '@/lib/types';
 
 export function UserNav() {
   const router = useRouter();
-  const [user, setUser] = useState<{ fullname: string; email: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     // This code runs only on the client, after hydration
